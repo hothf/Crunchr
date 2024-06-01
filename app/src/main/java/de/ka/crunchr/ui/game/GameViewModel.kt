@@ -11,6 +11,7 @@ import de.ka.crunchrgame.HighScore
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
+import java.lang.NumberFormatException
 
 class GameViewModel : ViewModel() {
 
@@ -41,7 +42,7 @@ class GameViewModel : ViewModel() {
         }
 
         game.currentCrunchUpdate = {
-            _state.update { state -> state.copy(crunch = it) }
+            _state.update { state -> state.copy(crunch = it, input = "") }
         }
 
         game.gameEndUpdate = {
@@ -89,8 +90,17 @@ class GameViewModel : ViewModel() {
         game.resume(viewModelScope)
     }
 
-    fun solve(input: Float) {
-        game.solve(viewModelScope, input)
+    fun solve() {
+        try {
+            val solvingInput = _state.value.input.toFloat()
+            game.solve(viewModelScope, solvingInput)
+        } catch (ex: NumberFormatException) {
+            Log.i("Solving", "Can't solve for ${_state.value.input}")
+        }
+    }
+
+    fun updateInput(input: String) {
+        _state.update { state -> state.copy(input = _state.value.input + input) }
     }
 
     data class UiState(
@@ -102,6 +112,7 @@ class GameViewModel : ViewModel() {
         val state: GameStatus = GameStatus.NOT_STARTED,
         val currentScore: Long = 0L,
         val crunchesSolved: Int = 0,
-        val highScore: HighScore? = null
+        val highScore: HighScore? = null,
+        val input: String = "",
     )
 }
