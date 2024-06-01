@@ -1,7 +1,9 @@
 package de.ka.crunchr.ui.game
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import de.ka.crunchr.domain.AppGameSaver
 import de.ka.crunchrgame.Crunch
 import de.ka.crunchrgame.CrunchrGame
 import de.ka.crunchrgame.GameStatus
@@ -14,6 +16,8 @@ class GameViewModel : ViewModel() {
 
     private val _state = MutableStateFlow(UiState())
     val state: StateFlow<UiState> = _state
+
+    var saver: () -> AppGameSaver? = { null }
 
     private val game: CrunchrGame = CrunchrGame()
 
@@ -56,6 +60,17 @@ class GameViewModel : ViewModel() {
                 )
             }
         }
+
+        game.onGameSave = { gameState ->
+            Log.i("CrunchrApp - Saving", "Saved game state $gameState")
+            saver()?.saveGameState(gameState)
+        }
+
+        game.onGameLoad = {
+            val gameState = saver()?.loadGameState()
+            Log.i("CrunchrApp - Loading", "Loaded game state $gameState")
+            gameState
+        }
     }
 
     fun start() {
@@ -63,7 +78,7 @@ class GameViewModel : ViewModel() {
     }
 
     fun pause() {
-        game.pause()
+        game.pause(viewModelScope)
     }
 
     fun quit() {

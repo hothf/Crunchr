@@ -29,3 +29,15 @@ o
 ?crunchrgame/src/main/java/de/ka/crunchrgame/saving/GameSaver.kt,7/c/7cb933a0702c7910e115c600ad90cb9294c66209
 h
 8crunchrgame/src/main/java/de/ka/crunchrgame/GameState.kt,4/c/4c81857a457ba03e7a31b33519417ffc44060fd3
+g
+7app/src/main/java/de/ka/crunchr/domain/GameSaverImpl.kt,0/7/0742e49826eb8b9adf849df480cf338721e54730
+d
+4app/src/main/java/de/ka/crunchr/data/AppGameSaver.kt,7/f/7f13dbe1d075befca22c29502bfb84b4351f0f59
+f
+6app/src/main/java/de/ka/crunchr/domain/CrunchrSaver.kt,0/7/07883ff4cbdfd96fa24471c3e12312c71d55e8ad
+I
+gradle/libs.versions.toml,d/7/d7595319a0658be6f1ed500ad590d42e4b28bc4f
+f
+6app/src/main/java/de/ka/crunchr/domain/AppGameSaver.kt,3/b/3bb39ef3e38fa99e8212a0a6d49932b781bc8b0e
+h
+8app/src/main/java/de/ka/crunchr/data/AppGameSaverImpl.kt,e/e/ee68d1bce1c3370d734fd0d91da291fbf5f987b8
