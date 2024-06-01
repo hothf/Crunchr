@@ -128,7 +128,7 @@ class CrunchrGame {
     private fun startCrunchTimer(scope: CoroutineScope, createNew: Boolean = true) {
         if (createNew) {
             gameState = gameState.copy(
-                currentCrunch = Crunch.createNew(),
+                currentCrunch = Crunch.createNew(gameState.currentLevel),
                 currentCrunchElapsedTimeMs = 0L
             )
         }

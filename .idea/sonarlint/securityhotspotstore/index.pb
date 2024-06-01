@@ -41,3 +41,7 @@ f
 6app/src/main/java/de/ka/crunchr/domain/AppGameSaver.kt,3/b/3bb39ef3e38fa99e8212a0a6d49932b781bc8b0e
 h
 8app/src/main/java/de/ka/crunchr/data/AppGameSaverImpl.kt,e/e/ee68d1bce1c3370d734fd0d91da291fbf5f987b8
+n
+>crunchrgame/src/main/java/de/ka/crunchrgame/CrunchGenerator.kt,a/5/a591c6d92b7da41a4436a6eec722e32d54b9a645
+r
+Bcrunchrgame/src/main/java/de/ka/crunchrgame/CrunchSeedGenerator.kt,0/7/0709f4ad8954e9bba095516c36cbfc3ae8305921
