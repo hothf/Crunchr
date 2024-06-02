@@ -21,8 +21,7 @@ class CrunchrGame {
     var currentCrunchUpdate: (crunch: Crunch) -> Unit = { _ -> }
     var gameEndUpdate: (highScore: HighScore) -> Unit = { _ -> }
     var gameStatusUpdate: (state: GameStatus) -> Unit = { _ -> }
-    var solveUpdate: (success: Boolean, solvedCrunchCount: Int, score: Long) -> Unit =
-        { _, _, _ -> }
+    var solveUpdate: (result: CrunchResult, count: Int, score: Long) -> Unit = { _, _, _ -> }
     var onGameSave: suspend (gameState: GameState) -> Unit = { }
     var onGameLoad: suspend () -> GameState? = { null }
 
@@ -39,7 +38,6 @@ class CrunchrGame {
     fun startNew(scope: CoroutineScope) {
         gameState = GameState(status = GameStatus.RUNNING)
         gameStatusUpdate(gameState.status)
-        solveUpdate(false, 0, 0)
 
         startGameOverTimer(scope)
         startCrunchTimer(scope)
@@ -49,6 +47,7 @@ class CrunchrGame {
      * Pauses the game.
      */
     fun pause(scope: CoroutineScope) {
+        if (gameState.status != GameStatus.RUNNING) return
         scope.launch {
             gameState = gameState.copy(status = GameStatus.PAUSED)
             gameStatusUpdate(gameState.status)
@@ -66,6 +65,8 @@ class CrunchrGame {
     fun resume(scope: CoroutineScope) {
         scope.launch {
             onGameLoad()?.let { gameState = it }
+
+            if (gameState.status != GameStatus.PAUSED) return@launch
 
             gameState = gameState.copy(status = GameStatus.RUNNING)
             gameStatusUpdate(gameState.status)
@@ -90,13 +91,14 @@ class CrunchrGame {
      * otherwise reduced.
      */
     fun solve(scope: CoroutineScope, input: Float) {
+        if (gameState.status != GameStatus.RUNNING) return
         gameState.currentCrunch?.let {
             val success = it.solve(input)
+            val neededTime = gameState.currentCrunchElapsedTimeMs
             gameState = if (success) {
                 gameState.copy(
                     gameOverTimeMs = gameState.gameOverTimeMs + gameState.currentLevel.successTimeBonusMs,
-                    currentSolvedCrunchCount = gameState.currentSolvedCrunchCount + 1,
-                    currentScore = gameState.currentScore + gameState.currentLevel.pointsPerSuccess
+                    currentSolvedCrunchCount = gameState.currentSolvedCrunchCount + 1
                 )
             } else {
                 gameState.copy(
@@ -106,7 +108,9 @@ class CrunchrGame {
             startGameOverTimer(scope)
             startCrunchTimer(scope)
 
-            solveUpdate(success, gameState.currentSolvedCrunchCount, gameState.currentScore)
+            val result = CrunchResult(success, gameState.currentLevel, neededTime)
+            gameState = gameState.copy(currentScore = gameState.currentScore + result.score)
+            solveUpdate(result, gameState.currentSolvedCrunchCount, gameState.currentScore)
         }
     }
 
@@ -146,11 +150,22 @@ class CrunchrGame {
                     gameState.currentLevel.timePerCalculationMs
                 )
             },
-            end = { startCrunchTimer(scope) }
+            end = {
+                failCrunch()
+                startCrunchTimer(scope)
+            }
         )
     }
 
+    private fun failCrunch() {
+        val result = CrunchResult(false, gameState.currentLevel, 0)
+        solveUpdate(result, gameState.currentSolvedCrunchCount, gameState.currentScore)
+    }
+
     private fun gameOver() {
+        failCrunch()
+        val result = CrunchResult(false, gameState.currentLevel, 0)
+        solveUpdate(result, gameState.currentSolvedCrunchCount, gameState.currentScore)
         gameState = gameState.copy(status = GameStatus.ENDED)
         gameStatusUpdate(gameState.status)
         gameEndUpdate(

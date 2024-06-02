@@ -4,6 +4,7 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import de.ka.crunchr.domain.AppGameSaver
+import de.ka.crunchr.ui.composables.Score
 import de.ka.crunchrgame.Crunch
 import de.ka.crunchrgame.CrunchrGame
 import de.ka.crunchrgame.GameStatus
@@ -53,10 +54,11 @@ class GameViewModel : ViewModel() {
             _state.update { state -> state.copy(state = it) }
         }
 
-        game.solveUpdate = { _, solvedCrunchCount, score ->
+        game.solveUpdate = { result, count, score ->
             _state.update { state ->
                 state.copy(
-                    crunchesSolved = solvedCrunchCount,
+                    score = ScoreDisplayUtils.createScoreFor(result),
+                    crunchesSolved = count,
                     currentScore = score
                 )
             }
@@ -76,6 +78,13 @@ class GameViewModel : ViewModel() {
 
     fun start() {
         game.startNew(viewModelScope)
+        _state.update { state ->
+            state.copy(
+                score = null,
+                crunchesSolved = 0,
+                currentScore = 0L
+            )
+        }
     }
 
     fun pause() {
@@ -99,7 +108,22 @@ class GameViewModel : ViewModel() {
         }
     }
 
+    fun clear() {
+        val lastIndex = _state.value.input.length - 1
+        if (lastIndex >= 0) {
+            _state.update { state ->
+                state.copy(
+                    input = _state.value.input.substring(0, lastIndex)
+                )
+            }
+        }
+    }
+
     fun updateInput(input: String) {
+        if (_state.value.state != GameStatus.RUNNING || (input == "." && _state.value.input.contains(
+                "."
+            ))
+        ) return
         _state.update { state -> state.copy(input = _state.value.input + input) }
     }
 
@@ -114,5 +138,6 @@ class GameViewModel : ViewModel() {
         val crunchesSolved: Int = 0,
         val highScore: HighScore? = null,
         val input: String = "",
+        val score: Score? = null
     )
 }
