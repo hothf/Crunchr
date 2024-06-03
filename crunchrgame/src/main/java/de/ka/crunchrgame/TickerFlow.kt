@@ -21,13 +21,15 @@ fun CoroutineScope.ticker(
     end: () -> Unit
 ) = this.async {
     var currentDuration = startDurationMs
+    tickUpdate(currentDuration, maxDurationMs - currentDuration)
     while (isActive && currentDuration < maxDurationMs) {
-        tickUpdate(currentDuration, maxDurationMs - currentDuration)
-        currentDuration += tickMs
         delay(tickMs)
+        currentDuration += tickMs
+        tickUpdate(currentDuration, maxDurationMs - currentDuration)
     }
     if (isActive) {
-        tickUpdate(currentDuration, maxDurationMs - currentDuration)
+        delay(tickMs)
+        tickUpdate(currentDuration, 0)
         end()
     }
 }

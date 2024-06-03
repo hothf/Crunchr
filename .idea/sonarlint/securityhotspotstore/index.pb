@@ -41,3 +41,5 @@ l
 <app/src/main/java/de/ka/crunchr/ui/game/ScoreDisplayUtils.kt,2/3/23679c5afa105c7c65fc5f284b6ad4977b7db7c0
 k
 ;crunchrgame/src/main/java/de/ka/crunchrgame/CrunchResult.kt,2/2/227af94e189d21aa2f75cda4c28b5eeb96686e47
+o
+?app/src/main/java/de/ka/crunchr/ui/composables/TimerProgress.kt,2/9/29680c1debeeca37f38761a3a4e5bb77df50d22a

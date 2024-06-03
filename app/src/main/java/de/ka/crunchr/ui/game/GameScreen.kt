@@ -1,7 +1,7 @@
 package de.ka.crunchr.ui.game
 
+import android.util.Log
 import androidx.compose.animation.Animatable
-import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -31,6 +31,7 @@ import androidx.compose.ui.unit.sp
 import de.ka.crunchr.data.AppGameSaverImpl
 import de.ka.crunchr.ui.composables.ScoreUpdateHost
 import de.ka.crunchr.ui.composables.ScoreUpdateHostState
+import de.ka.crunchr.ui.composables.TimerProgress
 
 import de.ka.crunchr.ui.lifecycle.OnPause
 import de.ka.crunchr.ui.theme.CrunchrTheme
@@ -124,13 +125,29 @@ private fun GameInputsScreen(
     }
     Column {
 
+        uiState.gameOverTimeProgress?.percentage?.let {
+            TimerProgress(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(50.dp), progress = it
+            )
+        }
+        uiState.crunchTimeProgress?.percentage?.let {
+            TimerProgress(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(50.dp), progress = it
+            )
+            Log.i("WTFFF", "ddddd . ... $it")
+        }
+
         Row() {
             Text(
                 modifier = Modifier.weight(2f),
                 text = "Status: ${uiState.state.name} " +
                         ":: Display ${uiState.crunch?.display} " +
-                        ":: Timeleft ${uiState.gameOverTimeLeft}, " +
-                        ":: TimeleftCrunch ${uiState.crunchTimeLeft}" +
+                        ":: Timeleft ${uiState.gameOverTimeProgress?.timeLeftMs}, " +
+                        ":: TimeleftCrunch ${uiState.crunchTimeProgress?.timeLeftMs}" +
                         ":: Crunches solved ${uiState.crunchesSolved}" +
                         ":: Score ${uiState.currentScore}"
             )

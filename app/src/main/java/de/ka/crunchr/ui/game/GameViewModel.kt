@@ -26,19 +26,13 @@ class GameViewModel : ViewModel() {
     init {
         game.gameOverTimerUpdate = { timeLeftMs, maxTimeMs ->
             _state.update { state ->
-                state.copy(
-                    gameOverTimeLeft = timeLeftMs.toString(),
-                    gameOverTime = maxTimeMs.toString()
-                )
+                state.copy(gameOverTimeProgress = TimerProgress(maxTimeMs, timeLeftMs))
             }
         }
 
         game.currentCalculationTimerUpdate = { timeLeftMs, maxTimeMs ->
             _state.update { state ->
-                state.copy(
-                    crunchTimeLeft = timeLeftMs.toString(),
-                    crunchTime = maxTimeMs.toString()
-                )
+                state.copy(crunchTimeProgress = TimerProgress(maxTimeMs, timeLeftMs))
             }
         }
 
@@ -127,11 +121,14 @@ class GameViewModel : ViewModel() {
         _state.update { state -> state.copy(input = _state.value.input + input) }
     }
 
+    data class TimerProgress(val timeOverallMs: Long, val timeLeftMs: Long) {
+        val percentage =
+            if (timeOverallMs <= 0L) 1f else timeLeftMs.toFloat() / timeOverallMs.toFloat()
+    }
+
     data class UiState(
-        val gameOverTimeLeft: String = "",
-        val gameOverTime: String = "",
-        val crunchTimeLeft: String = "",
-        val crunchTime: String = "",
+        val gameOverTimeProgress: TimerProgress? = null,
+        val crunchTimeProgress: TimerProgress? = null,
         val crunch: Crunch? = null,
         val state: GameStatus = GameStatus.NOT_STARTED,
         val currentScore: Long = 0L,
