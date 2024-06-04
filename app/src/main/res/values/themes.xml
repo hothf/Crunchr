@@ -1,5 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
+    <style name="Theme.Splash" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/primary_light</item>
+        <item name="postSplashScreenTheme">@style/Theme.Crunchr</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/splash_anim</item>
+    </style>
+
     <style name="Theme.Crunchr" parent="android:Theme.Material.Light.NoActionBar" />
 </resources>

@@ -1,3 +1,57 @@
 <resources>
     <string name="app_name">crunchr</string>
+
+    <string name="game_solve">SOLVE</string>
+    <string name="game_clear">CLEAR</string>
+
+    <string name="game_score">Score: </string>
+    <string name="game_level">Level: </string>
+    <string name="game_display_caret">\></string>
+
+    <string name="not_started_title">Welcome to Crunchr!</string>
+    <string name="not_start_new">Start new Crunch</string>
+    <string name="not_started_settings">Settings</string>
+    <string name="not_started_exit">Exit</string>
+
+    <string name="game_over_title">Game Over</string>
+    <string name="game_over_start">Start over</string>
+    <string name="game_over_exit">Exit</string>
+    <string name="game_over_best">new record!</string>
+
+    <string name="select_level_title">Select Level</string>
+    <string name="select_level">Level: %s</string>
+
+    <string name="highscore_score">Score: </string>
+    <string name="highscore_streak">Streak: </string>
+    <string name="highscore_average">Avg.:</string>
+    <string name="highscore_level">Level: </string>
+    <string name="highscore_solved">Solved: </string>
+    <string name="highscore_time">Time: </string>
+    <string name="highscore_level_val">(%s) %s</string>
+
+    <string name="paused_title">Paused</string>
+    <string name="paused_resume">Resume</string>
+    <string name="paused_settings">Settings</string>
+    <string name="paused_restart">Restart</string>
+    <string name="paused_forfeit">Forfeit</string>
+    <string name="paused_exit">Exit</string>
+
+    <string name="settings_title">Settings</string>
+    <string name="settings_back">Back</string>
+    <string name="settings_vibration">Vibration</string>
+    <string name="settings_sound">Sound</string>
+
+    <string name="performance_none"> </string>
+    <string name="performance_okay">Okay</string>
+    <string name="performance_great">Great</string>
+    <string name="performance_perfect">Perfect</string>
+    <string name="performance_streak">%d-Streak</string>
+    <string name="performance_multiplier">\nx%s</string>
+    <string name="performance_points_pos">+%d</string>
+    <string name="performance_points_neg">%d</string>
+
+    <string translatable="false" name="time_seconds">%s s</string>
+    <string translatable="false" name="time_minutes">%s min %s s</string>
+    <string translatable="false" name="time_hours">%s h %s min %s s</string>
+    <string translatable="false" name="time_days">%s d %s h %s min %s s</string>
 </resources>

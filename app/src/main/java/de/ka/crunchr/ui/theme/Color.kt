@@ -2,10 +2,20 @@ package de.ka.crunchr.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-val Purple80 = Color(0xFFD0BCFF)
-val PurpleGrey80 = Color(0xFFCCC2DC)
-val Pink80 = Color(0xFFEFB8C8)
 
-val Purple40 = Color(0xFF6650a4)
-val PurpleGrey40 = Color(0xFF625b71)
-val Pink40 = Color(0xFF7D5260)
+val light = Color(0xFFe5e6e4) //  Color(0xFFe5e6e4) //0xFF474a5f
+val glow = Color(0xCCadacb5)
+val dark = Color(0xFF25283d)
+val black = Color(0xFF000000)
+
+val veryLightText = Color(0xFFfeb811)
+val mediumText = Color(0xFFD39E21)
+val lightText = Color(0xFFFFFFFF)
+val darkText = Color(0xFF4f5364)
+
+val successGreen = Color(0xFFacf39d)
+val errorRed = Color(0xFFde2828)
+
+val solveColor = Color(0xFF028918)
+val clearColor = Color(0xFFff3e4d)
+val softColor = Color(0x88888888)

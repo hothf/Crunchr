@@ -60,6 +60,7 @@ dependencies {
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
     implementation(libs.androidx.datastore)
+    implementation(libs.androidx.splashscreen)
     implementation(project(":crunchrgame"))
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

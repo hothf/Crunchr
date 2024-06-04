@@ -1,182 +1,301 @@
 package de.ka.crunchrgame
 
+import de.ka.crunchrgame.models.crunch.Result
+import de.ka.crunchrgame.models.Listeners
+import de.ka.crunchrgame.models.Savers
+import de.ka.crunchrgame.models.Score
+import de.ka.crunchrgame.models.State
+import de.ka.crunchrgame.models.Status
+import de.ka.crunchrgame.models.Level
+import de.ka.crunchrgame.utils.launchTicker
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 /**
- * A game which lets users [solve] [puzzles called Crunches][Crunch].
+ * A game which lets users [solve] puzzles called 'Crunches'.
  *
  * There is a limited time frame to solve a crunch. A overall timer is started on [startNew] and
- * it's end announces that the game is over. By solving crunches the user can extend or reduce the
- * overall timer.
+ * it's end announces that the game is over. By solving crunches the user can extend the timer or
+ * reduce the overall score.
  *
  * Each solved crunch can lead to increased [Level]s which reward ever increasing points.
  */
-class CrunchrGame {
+class CrunchrGame(private var coroutineScope: CoroutineScope?) {
 
     // public update listeners
-    var gameOverTimerUpdate: (timeLeftMs: Long, maxTimeMs: Long) -> Unit = { _, _ -> }
-    var currentCalculationTimerUpdate: (timeLeftMs: Long, maxTimeMs: Long) -> Unit = { _, _ -> }
-    var currentCrunchUpdate: (crunch: Crunch) -> Unit = { _ -> }
-    var gameEndUpdate: (highScore: HighScore) -> Unit = { _ -> }
-    var gameStatusUpdate: (state: GameStatus) -> Unit = { _ -> }
-    var solveUpdate: (result: CrunchResult, count: Int, score: Long) -> Unit = { _, _, _ -> }
-    var onGameSave: suspend (gameState: GameState) -> Unit = { }
-    var onGameLoad: suspend () -> GameState? = { null }
+    var listener = Listeners()
 
-    // private game vars
-    private var gameState = GameState()
+    // public game persistence
+    var saver = Savers()
 
-    // absolutely private internals
+    // the current game state
+    private var state = State()
+
+    // private internal coroutine jobs
     private var gameOverTimerJob: Job? = null
     private var currentCalculationTimerJob: Job? = null
 
     /**
      * Starts a new game.
      */
-    fun startNew(scope: CoroutineScope) {
-        gameState = GameState(status = GameStatus.RUNNING)
-        gameStatusUpdate(gameState.status)
+    fun startNew(level: Level = Level()) {
+        state = State(status = Status.RUNNING, startLevel = level)
 
-        startGameOverTimer(scope)
-        startCrunchTimer(scope)
+        notifyCurrentScore()
+        notifyGameStateStatus()
+
+        notifyGameOverTimer(stop = true)
+        notifyCrunchTimer(stop = true)
+
+        startGameOverTimer()
+        startCrunchTimer()
+    }
+
+    /**
+     * Loads and checks the last game if possible.
+     */
+    fun loadLast() {
+        coroutineScope?.launch {
+            val lastGameIncomplete = loadLastGameAndUpdateIncomplete()
+
+            if (lastGameIncomplete) {
+                notifyGameOverTimer(stop = true)
+                notifyCrunchTimer(stop = true)
+                notifyCurrentCrunch()
+                notifyCurrentScore()
+            } else {
+                state = state.copy(status = Status.NOT_STARTED)
+            }
+            notifyGameStateStatus()
+        }
     }
 
     /**
      * Pauses the game.
      */
-    fun pause(scope: CoroutineScope) {
-        if (gameState.status != GameStatus.RUNNING) return
-        scope.launch {
-            gameState = gameState.copy(status = GameStatus.PAUSED)
-            gameStatusUpdate(gameState.status)
+    fun pause() {
+        if (state.status != Status.RUNNING) return
 
-            gameOverTimerJob?.cancel()
-            currentCalculationTimerJob?.cancel()
+        state = state.copy(status = Status.PAUSED)
 
-            onGameSave(gameState)
-        }
+        notifyGameStateStatus()
+        notifyCurrentScore()
+
+        gameOverTimerJob?.cancel()
+        notifyGameOverTimer(stop = true)
+        currentCalculationTimerJob?.cancel()
+        notifyCrunchTimer(stop = true)
+
+        coroutineScope?.launch { saver.onGameSave(state) }
     }
 
     /**
-     * Resumes the game, starting from the last known [gameState].
+     * Resumes the game, starting from the last known [state].
      */
-    fun resume(scope: CoroutineScope) {
-        scope.launch {
-            onGameLoad()?.let { gameState = it }
+    fun resume() {
+        state = state.copy(status = Status.RUNNING)
+        notifyGameStateStatus()
 
-            if (gameState.status != GameStatus.PAUSED) return@launch
+        //startGameOverTimer()
+        //newCrunch()
 
-            gameState = gameState.copy(status = GameStatus.RUNNING)
-            gameStatusUpdate(gameState.status)
-
-            startGameOverTimer(scope)
-            startCrunchTimer(scope, createNew = false)
-        }
+        solve(null)
     }
 
     /**
-     * Quits the game.
+     * Forces starting of a new crunch, if the game is running.
+     */
+    fun newCrunch() {
+        if (state.status != Status.RUNNING) return
+
+        failCrunch(true)
+    }
+
+    /**
+     * Forfeits the game.
+     */
+    fun forfeit() {
+        state = state.copy(status = Status.ENDED)
+        notifyGameStateStatus()
+
+        gameOverTimerJob?.cancel()
+        notifyGameOverTimer(stop = true)
+        currentCalculationTimerJob?.cancel()
+        notifyCrunchTimer(stop = true)
+    }
+
+    /**
+     * Quits the game and resets to the not started status.
      */
     fun quit() {
-        gameState = gameState.copy(status = GameStatus.ENDED)
-        gameStatusUpdate(gameState.status)
+        state = state.copy(status = Status.NOT_STARTED)
+        notifyGameStateStatus()
+
         gameOverTimerJob?.cancel()
+        notifyGameOverTimer(stop = true)
         currentCalculationTimerJob?.cancel()
+        notifyCrunchTimer(stop = true)
     }
 
     /**
-     * Solves the current [Crunch] with the given [input]. If successful, game time is increased,
-     * otherwise reduced.
+     * Releases game resources.
+     * You can no longer safely call any methods after this point before re-calling the constructor.
      */
-    fun solve(scope: CoroutineScope, input: Float) {
-        if (gameState.status != GameStatus.RUNNING) return
-        gameState.currentCrunch?.let {
-            val success = it.solve(input)
-            val neededTime = gameState.currentCrunchElapsedTimeMs
-            gameState = if (success) {
-                gameState.copy(
-                    gameOverTimeMs = gameState.gameOverTimeMs + gameState.currentLevel.successTimeBonusMs,
-                    currentSolvedCrunchCount = gameState.currentSolvedCrunchCount + 1
-                )
-            } else {
-                gameState.copy(
-                    gameOverTimeMs = gameState.gameOverTimeMs - (gameState.currentLevel.successTimeBonusMs / 2),
-                )
-            }
-            startGameOverTimer(scope)
-            startCrunchTimer(scope)
-
-            val result = CrunchResult(success, gameState.currentLevel, neededTime)
-            gameState = gameState.copy(currentScore = gameState.currentScore + result.score)
-            solveUpdate(result, gameState.currentSolvedCrunchCount, gameState.currentScore)
-        }
+    fun release() {
+        coroutineScope = null
     }
 
-    private fun startGameOverTimer(scope: CoroutineScope) {
+    /**
+     * Solves the current crunch with the given [input]. If successful, game time is increased,
+     * otherwise reduced. Awards success with points and levels.
+     */
+    fun solve(input: Float? = null) {
+        if (state.status != Status.RUNNING) return
+
+        state.currentCrunch?.let {
+            val result = Rules.determineCrunchResult(
+                input = input,
+                expected = it.expected,
+                neededTimeMs = state.currentCrunchElapsedTimeMs,
+                lastSolvingTimeMs = state.lastCrunchSolvedTimeMs,
+                streakCount = state.streakCount,
+                currentLevel = state.currentLevel
+            )
+
+            val newScore = (state.currentScore + result.finalPoints).coerceIn(Rules.MAX_POINTS)
+
+            state = state.copy(
+                gameOverTimeMs = Rules.determineTimeUpdate(
+                    success = result.successful,
+                    gameOverTimeMs = state.gameOverTimeMs,
+                    gameOverElapsedTimeMs = state.gameOverElapsedTimeMs,
+                    level = state.currentLevel,
+                ),
+                currentScore = newScore,
+                currentLevel = Rules.determineLevel(state.startLevel, newScore),
+                lastCrunchSolvedTimeMs = result.solvingTimeMs,
+                overallCrunchCount = state.overallCrunchCount + 1,
+                streakCount = result.streakCount,
+                bestStreakCount = if (state.bestStreakCount < result.streakCount) result.streakCount else state.bestStreakCount,
+                currentSolvedCrunchCount = if (result.successful) state.currentSolvedCrunchCount + 1 else state.currentSolvedCrunchCount,
+            )
+            notifyCurrentSolve(result)
+            notifyCurrentScore()
+        }
+        startGameOverTimer()
+        startCrunchTimer()
+    }
+
+    private suspend fun loadLastGameAndUpdateIncomplete(): Boolean {
+        saver.onGameLoad()?.let { state = it }
+        return state.status != Status.ENDED
+    }
+
+    private fun startGameOverTimer() {
         gameOverTimerJob?.cancel()
-        gameOverTimerJob = scope.ticker(
-            maxDurationMs = gameState.gameOverTimeMs,
-            startDurationMs = gameState.gameOverElapsedTimeMs,
-            tickUpdate = { timeElapsedMs, timeLeftMs ->
-                gameState = gameState.copy(
-                    gameOverElapsedTimeMs = timeElapsedMs
-                )
-                gameOverTimerUpdate(timeLeftMs, gameState.gameOverTimeMs)
+        notifyGameOverTimer()
+
+        gameOverTimerJob = coroutineScope?.launchTicker(
+            maxDurationMs = state.gameOverTimeMs,
+            startDurationMs = state.gameOverElapsedTimeMs,
+            tickUpdate = { timeElapsedMs, _ ->
+                state = state.copy(gameOverElapsedTimeMs = timeElapsedMs)
             },
             end = { gameOver() }
         )
     }
 
-    private fun startCrunchTimer(scope: CoroutineScope, createNew: Boolean = true) {
+    private fun startCrunchTimer(createNew: Boolean = true) {
         if (createNew) {
-            gameState = gameState.copy(
-                currentCrunch = Crunch.createNew(gameState.currentLevel),
+            state = state.copy(
+                currentCrunch = Rules.determineNewCrunch(state.currentLevel),
                 currentCrunchElapsedTimeMs = 0L
             )
         }
-        gameState.currentCrunch?.let(currentCrunchUpdate)
+        val currentCrunch = state.currentCrunch ?: return
+
+        notifyCurrentCrunch()
+        notifyCrunchTimer()
+
         currentCalculationTimerJob?.cancel()
-        currentCalculationTimerJob = scope.ticker(
-            maxDurationMs = gameState.currentLevel.timePerCalculationMs,
-            startDurationMs = gameState.currentCrunchElapsedTimeMs,
-            tickUpdate = { timeElapsedMs, timeLeftMs ->
-                gameState = gameState.copy(
-                    currentCrunchElapsedTimeMs = timeElapsedMs,
-                )
-                currentCalculationTimerUpdate(
-                    timeLeftMs,
-                    gameState.currentLevel.timePerCalculationMs
-                )
+        currentCalculationTimerJob = coroutineScope?.launchTicker(
+            maxDurationMs = currentCrunch.crunchTimeMs.toLong(),
+            startDurationMs = state.currentCrunchElapsedTimeMs,
+            tickUpdate = { timeElapsedMs, _ ->
+                state = state.copy(currentCrunchElapsedTimeMs = timeElapsedMs)
             },
             end = {
                 failCrunch()
-                startCrunchTimer(scope)
+                startCrunchTimer()
             }
         )
     }
 
-    private fun failCrunch() {
-        val result = CrunchResult(false, gameState.currentLevel, 0)
-        solveUpdate(result, gameState.currentSolvedCrunchCount, gameState.currentScore)
+    private fun gameOver() {
+        state = state.copy(status = Status.ENDED)
+        failCrunch()
+        notifyGameStateStatus()
+
+        gameOverTimerJob?.cancel()
+        notifyGameOverTimer(stop = true)
+        currentCalculationTimerJob?.cancel()
+        notifyCrunchTimer(stop = true)
+
+        coroutineScope?.launch { saver.onGameSave(state) }
     }
 
-    private fun gameOver() {
-        failCrunch()
-        val result = CrunchResult(false, gameState.currentLevel, 0)
-        solveUpdate(result, gameState.currentSolvedCrunchCount, gameState.currentScore)
-        gameState = gameState.copy(status = GameStatus.ENDED)
-        gameStatusUpdate(gameState.status)
-        gameEndUpdate(
-            HighScore(
-                elapsedTimeMs = gameState.gameOverElapsedTimeMs,
-                score = gameState.currentScore,
-                crunchCount = gameState.currentSolvedCrunchCount
+    private fun failCrunch(startNew: Boolean = false) {
+        val crunch = state.currentCrunch
+        crunch?.let {
+            val result = Rules.determineCrunchResult(expected = crunch.expected)
+            state = state.copy(
+                lastCrunchSolvedTimeMs = null,
+                overallCrunchCount = state.overallCrunchCount + 1,
+                streakCount = result.streakCount,
+                currentSolvedCrunchCount = state.currentSolvedCrunchCount
+            )
+            notifyCurrentSolve(result)
+            notifyCurrentScore()
+        }
+        if (startNew) {
+            startCrunchTimer(true)
+        }
+    }
+
+    private fun notifyGameOverTimer(stop: Boolean = false) {
+        val leftMs = state.gameOverTimeMs - state.gameOverElapsedTimeMs
+        listener.gameOverTimerUpdate(stop, if (leftMs < 0) 0 else leftMs, Rules.MAX_TIME_MS)
+    }
+
+    private fun notifyCrunchTimer(stop: Boolean = false) {
+        val timeMs = state.currentCrunch?.crunchTimeMs?.toLong() ?: return
+        val leftMs = timeMs - state.currentCrunchElapsedTimeMs
+        listener.currentCalculationTimerUpdate(stop, if (leftMs < 0) 0 else leftMs, timeMs)
+    }
+
+    private fun notifyGameStateStatus() {
+        listener.gameStatusUpdate(state.status)
+    }
+
+    private fun notifyCurrentScore() {
+        listener.currentScoreUpdate(
+            Score(
+                elapsedTimeMs = state.gameOverElapsedTimeMs,
+                score = state.currentScore,
+                overallCrunchCount = state.overallCrunchCount,
+                crunchCount = state.currentSolvedCrunchCount,
+                level = state.currentLevel,
+                bestStreakCount = state.bestStreakCount
             )
         )
-        gameOverTimerJob?.cancel()
-        currentCalculationTimerJob?.cancel()
+    }
+
+    private fun notifyCurrentCrunch() {
+        state.currentCrunch?.let(listener.currentCrunchUpdate)
+    }
+
+    private fun notifyCurrentSolve(result: Result) {
+        listener.solveUpdate(result)
     }
 }

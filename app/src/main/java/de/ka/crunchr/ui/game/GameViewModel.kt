@@ -3,15 +3,23 @@ package de.ka.crunchr.ui.game
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import de.ka.crunchr.domain.AppGameSaver
-import de.ka.crunchr.ui.composables.Score
-import de.ka.crunchrgame.Crunch
+import de.ka.crunchr.domain.HighScore
+import de.ka.crunchr.domain.Settings
+import de.ka.crunchr.domain.Sound
+import de.ka.crunchr.ui.composables.SolvingResult
+import de.ka.crunchrgame.models.crunch.Crunch
 import de.ka.crunchrgame.CrunchrGame
-import de.ka.crunchrgame.GameStatus
-import de.ka.crunchrgame.HighScore
+import de.ka.crunchrgame.models.Listeners
+import de.ka.crunchrgame.models.Savers
+import de.ka.crunchrgame.models.Status
+import de.ka.crunchrgame.models.Score
+import de.ka.crunchrgame.models.Level
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 import java.lang.NumberFormatException
 
 class GameViewModel : ViewModel() {
@@ -19,122 +27,276 @@ class GameViewModel : ViewModel() {
     private val _state = MutableStateFlow(UiState())
     val state: StateFlow<UiState> = _state
 
-    var saver: () -> AppGameSaver? = { null }
+    private val _event = MutableSharedFlow<Event>()
+    val event: SharedFlow<Event> = _event
 
-    private val game: CrunchrGame = CrunchrGame()
+    var dependencies: GameDependencies = GameDependencies()
+
+    private val game: CrunchrGame = CrunchrGame(viewModelScope)
 
     init {
-        game.gameOverTimerUpdate = { timeLeftMs, maxTimeMs ->
-            _state.update { state ->
-                state.copy(gameOverTimeProgress = TimerProgress(maxTimeMs, timeLeftMs))
+        game.listener = Listeners(
+            gameOverTimerUpdate = { stop, timeLeftMs, maxTimeMs ->
+                viewModelScope.launch {
+                    _event.emit(Event.GameTimeEvent(stop, timeLeftMs, maxTimeMs))
+                }
+            },
+            currentCalculationTimerUpdate = { stop, timeLeftMs, maxTimeMs ->
+                viewModelScope.launch {
+                    _event.emit(Event.CrunchTimeEvent(stop, timeLeftMs, maxTimeMs))
+                }
+            },
+            currentCrunchUpdate = {
+                viewModelScope.launch {
+                    _state.update { state -> state.copy(crunch = it, input = "") }
+                }
+            },
+            gameStatusUpdate = {
+                if (_state.value.status.current == GameScreenStatus.RUNNING && it == Status.ENDED) {
+                    vibrate(true)
+                    playSound(Sound.Sounds.GAME_OVER)
+                    _state.value.currentScore?.let { score ->
+                        viewModelScope.launch {
+                            _state.update { state ->
+                                state.copy(
+                                    highScore = dependencies.highScoreSaver().findHighScore(score)
+                                )
+                            }
+                        }
+                    }
+                }
+                updateGameScreenStatusTo(GameScreenStatus.getStateForStatus(it))
+            },
+            solveUpdate = { result ->
+                if (!result.successful) {
+                    vibrate()
+                    playSound(Sound.Sounds.SOLVE_FAIL)
+                } else {
+                    playSound(Sound.Sounds.SOLVE_SUCCESS)
+                }
+                viewModelScope.launch {
+                    _event.emit(
+                        Event.SolvingResultEvent(result.toSolvingResult(dependencies.stringResolver))
+                    )
+                }
+            },
+            currentScoreUpdate = { highScore ->
+                val currentLevel = _state.value.currentScore?.level?.value
+                if (currentLevel != null && currentLevel < highScore.level.value) {
+                    playSound(Sound.Sounds.NEW_LEVEL)
+                }
+                _state.update { state -> state.copy(currentScore = highScore) }
             }
-        }
+        )
 
-        game.currentCalculationTimerUpdate = { timeLeftMs, maxTimeMs ->
-            _state.update { state ->
-                state.copy(crunchTimeProgress = TimerProgress(maxTimeMs, timeLeftMs))
-            }
-        }
-
-        game.currentCrunchUpdate = {
-            _state.update { state -> state.copy(crunch = it, input = "") }
-        }
-
-        game.gameEndUpdate = {
-            _state.update { state -> state.copy(highScore = it) }
-        }
-
-        game.gameStatusUpdate = {
-            _state.update { state -> state.copy(state = it) }
-        }
-
-        game.solveUpdate = { result, count, score ->
-            _state.update { state ->
-                state.copy(
-                    score = ScoreDisplayUtils.createScoreFor(result),
-                    crunchesSolved = count,
-                    currentScore = score
-                )
-            }
-        }
-
-        game.onGameSave = { gameState ->
-            Log.i("CrunchrApp - Saving", "Saved game state $gameState")
-            saver()?.saveGameState(gameState)
-        }
-
-        game.onGameLoad = {
-            val gameState = saver()?.loadGameState()
-            Log.i("CrunchrApp - Loading", "Loaded game state $gameState")
-            gameState
-        }
+        game.saver = Savers(
+            onGameSave = { gameState -> dependencies.gameSaver().saveGameState(gameState) },
+            onGameLoad = { dependencies.gameSaver().loadGameState() }
+        )
     }
 
-    fun start() {
-        game.startNew(viewModelScope)
+    private fun updateGameScreenStatusTo(gameScreenStatus: GameScreenStatus) {
         _state.update { state ->
             state.copy(
-                score = null,
-                crunchesSolved = 0,
-                currentScore = 0L
+                status = state.status.copy(
+                    previous = state.status.current,
+                    current = gameScreenStatus
+                )
             )
         }
     }
 
-    fun pause() {
-        game.pause(viewModelScope)
+    fun saveSettings(vibrationChanged: Boolean = false, soundChanged: Boolean = false) {
+        viewModelScope.launch {
+            var settings = _state.value.settings
+            if (vibrationChanged) {
+                settings = settings.copy(isVibrationEnabled = !settings.isVibrationEnabled)
+            }
+            if (soundChanged) {
+                settings = settings.copy(isSoundEnabled = !settings.isSoundEnabled)
+            }
+            settings.save(dependencies.settingsSaver)
+            _state.update { state -> state.copy(settings = settings) }
+            if (vibrationChanged) {
+                vibrate()
+            }
+            if (soundChanged) {
+                playSound(Sound.Sounds.SOLVE_SUCCESS)
+            }
+        }
+    }
+
+    fun openLevelSelect() {
+        updateGameScreenStatusTo(GameScreenStatus.CHOOSE_LEVEL)
+    }
+
+    fun openSettings() {
+        updateGameScreenStatusTo(GameScreenStatus.SETTINGS)
+    }
+
+    fun back() {
+        _state.value.status.previous?.let(::updateGameScreenStatusTo)
     }
 
     fun quit() {
         game.quit()
     }
 
+    /**
+     * Handle back press consumption. Returns `true` if back press is consumed by this logic.
+     * Return `false` to let the caller handle the back press
+     */
+    fun consumeBack(): Boolean {
+        return when (_state.value.status.current) {
+            GameScreenStatus.RUNNING -> {
+                pause()
+                true
+            }
+
+            GameScreenStatus.SETTINGS, GameScreenStatus.CHOOSE_LEVEL -> {
+                back()
+                true
+            }
+
+            GameScreenStatus.PAUSED -> {
+                resume()
+                true
+            }
+
+            GameScreenStatus.NOT_LOADED,
+            GameScreenStatus.NOT_STARTED,
+            GameScreenStatus.ENDED -> false
+        }
+    }
+
+    fun loadLastGameAndSettings() {
+        viewModelScope.launch {
+            updateGameScreenStatusTo(GameScreenStatus.NOT_LOADED)
+
+            // 1. load last settings
+            val settings = Settings.load(dependencies.settingsSaver) ?: Settings()
+            _state.update { state -> state.copy(settings = settings) }
+
+            // 2. prepare sounds
+            dependencies.sound.prepare()
+
+            // 3. load last game to notify status loaded
+            game.loadLast()
+        }
+    }
+
+    fun start(level: Level?) {
+        viewModelScope.launch {
+            if (level != null) {
+                dependencies.settingsSaver().setChosenLevel(level)
+            }
+            game.startNew(dependencies.settingsSaver().getChosenLevel())
+        }
+    }
+
+    fun release() {
+        game.release()
+
+        dependencies.sound.release()
+    }
+
+    fun pause() {
+        game.pause()
+    }
+
+    fun forfeit() {
+        game.forfeit()
+    }
+
     fun resume() {
-        game.resume(viewModelScope)
+        game.resume()
     }
 
     fun solve() {
         try {
             val solvingInput = _state.value.input.toFloat()
-            game.solve(viewModelScope, solvingInput)
+            game.solve(solvingInput)
         } catch (ex: NumberFormatException) {
             Log.i("Solving", "Can't solve for ${_state.value.input}")
         }
     }
 
     fun clear() {
-        val lastIndex = _state.value.input.length - 1
-        if (lastIndex >= 0) {
-            _state.update { state ->
-                state.copy(
-                    input = _state.value.input.substring(0, lastIndex)
-                )
-            }
-        }
+        _state.update { state -> state.copy(input = "") }
+    }
+
+    fun newCrunch() {
+        game.newCrunch()
     }
 
     fun updateInput(input: String) {
-        if (_state.value.state != GameStatus.RUNNING || (input == "." && _state.value.input.contains(
+        if (_state.value.status.current != GameScreenStatus.RUNNING || (input == "." && _state.value.input.contains(
                 "."
             ))
+            || _state.value.input.length >= 7
         ) return
         _state.update { state -> state.copy(input = _state.value.input + input) }
     }
 
-    data class TimerProgress(val timeOverallMs: Long, val timeLeftMs: Long) {
-        val percentage =
-            if (timeOverallMs <= 0L) 1f else timeLeftMs.toFloat() / timeOverallMs.toFloat()
+    private fun vibrate(long: Boolean = false) {
+        _state.value.settings.let {
+            if (it.isVibrationEnabled) {
+                dependencies.vibrator.vibrate(long)
+            }
+        }
+    }
+
+    private fun playSound(sound: Sound.Sounds) {
+        _state.value.settings.let {
+            if (it.isSoundEnabled) {
+                dependencies.sound.play(sound)
+            }
+        }
     }
 
     data class UiState(
-        val gameOverTimeProgress: TimerProgress? = null,
-        val crunchTimeProgress: TimerProgress? = null,
+        val status: ScreenStates = ScreenStates(current = GameScreenStatus.NOT_LOADED),
         val crunch: Crunch? = null,
-        val state: GameStatus = GameStatus.NOT_STARTED,
-        val currentScore: Long = 0L,
-        val crunchesSolved: Int = 0,
+        val currentScore: Score? = null,
         val highScore: HighScore? = null,
         val input: String = "",
-        val score: Score? = null
+        val settings: Settings = Settings()
     )
+
+    data class ScreenStates(val previous: GameScreenStatus? = null, val current: GameScreenStatus)
+
+    enum class GameScreenStatus {
+        NOT_LOADED,
+        NOT_STARTED,
+        RUNNING,
+        PAUSED,
+        ENDED,
+        CHOOSE_LEVEL,
+        SETTINGS;
+
+        companion object {
+            fun getStateForStatus(status: Status): GameScreenStatus {
+                return when (status) {
+                    Status.ENDED -> ENDED
+                    Status.PAUSED -> PAUSED
+                    Status.RUNNING -> RUNNING
+                    Status.NOT_STARTED -> NOT_STARTED
+                }
+            }
+        }
+    }
+
+    sealed class Event {
+        open class TimeEvent(leftMs: Long, timeMs: Long) : Event() {
+            val percentage = if (timeMs <= 0L) 1f else leftMs.toFloat() / timeMs.toFloat()
+        }
+
+        data class CrunchTimeEvent(val stopped: Boolean, val timeMs: Long, val overallMs: Long) :
+            TimeEvent(timeMs, overallMs)
+
+        data class GameTimeEvent(val stopped: Boolean, val timeMs: Long, val overallMs: Long) :
+            TimeEvent(timeMs, overallMs)
+
+        data class SolvingResultEvent(val result: SolvingResult) : Event()
+    }
 }

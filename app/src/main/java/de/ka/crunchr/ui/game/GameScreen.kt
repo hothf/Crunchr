@@ -1,303 +1,228 @@
 package de.ka.crunchr.ui.game
 
-import android.util.Log
-import androidx.compose.animation.Animatable
-import androidx.compose.animation.core.tween
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
+import android.content.res.Configuration
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.width
-import androidx.compose.material3.Button
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import de.ka.crunchr.data.AppGameSaverImpl
-import de.ka.crunchr.ui.composables.ScoreUpdateHost
-import de.ka.crunchr.ui.composables.ScoreUpdateHostState
-import de.ka.crunchr.ui.composables.TimerProgress
+import de.ka.crunchr.ui.game.subscreens.GameNotStartedScreen
+import de.ka.crunchr.ui.game.subscreens.GameOverScreen
+import de.ka.crunchr.ui.game.subscreens.PauseScreen
+import de.ka.crunchr.ui.game.subscreens.SettingsScreen
 
-import de.ka.crunchr.ui.lifecycle.OnPause
+import de.ka.crunchr.ui.composables.lifecycle.OnLifeCycle
+import de.ka.crunchr.ui.composables.lifecycle.collectInLaunchedEffectWithLifecycle
+import de.ka.crunchr.ui.composables.utils.UiDefaults
+import de.ka.crunchr.ui.game.gamebelowinput.LowerInput
+import de.ka.crunchr.ui.game.gameatopdisplay.TopDisplay
+import de.ka.crunchr.ui.game.subscreens.LevelSelectScreen
+import de.ka.crunchr.ui.game.subscreens.LoadingScreen
 import de.ka.crunchr.ui.theme.CrunchrTheme
-import de.ka.crunchrgame.GameStatus
+import de.ka.crunchrgame.models.crunch.Crunch
+import de.ka.crunchrgame.models.crunch.Symbols
+import kotlinx.coroutines.launch
 
 @Composable
-fun GameScreen(viewModel: GameViewModel) {
-    val context = LocalContext.current.applicationContext
+fun GameScreen(
+    viewModel: GameViewModel = GameViewModel(),
+    gameHostStates: GameHostStates = defaultGameHostStates(),
+    handleBack: () -> Unit = {}
+) {
     val uiState by viewModel.state.collectAsState()
 
-    OnPause {
-        viewModel.pause()
+    OnLifeCycle(
+        onDestroyEvent = viewModel::release,
+        onPauseEvent = viewModel::pause
+    )
+
+    BackHandler {
+        if (!viewModel.consumeBack()) {
+            handleBack()
+        }
     }
 
-    LaunchedEffect(viewModel) {
-        viewModel.saver = { AppGameSaverImpl(context) }
+    val gameInteractions = GameInteractions(
+        onStart = { level -> viewModel.start(level) },
+        onPause = { viewModel.pause() },
+        onResume = { viewModel.resume() },
+        onForfeit = { viewModel.forfeit() },
+        onSolve = { viewModel.solve() },
+        input = { input -> viewModel.updateInput(input) },
+        clear = { viewModel.clear() },
+        onQuit = { viewModel.quit() },
+        onExit = { handleBack() },
+        onBack = { viewModel.back() }
+    )
+
+    val settingsInteractions = SettingsInteractions(
+        onOpenLevelSelect = { viewModel.openLevelSelect() },
+        onOpenSettings = { open -> if (open) viewModel.openSettings() else viewModel.back() },
+        onSettingsChanged = { vibration, sound -> viewModel.saveSettings(vibration, sound) }
+    )
+
+    viewModel.event.collectInLaunchedEffectWithLifecycle {
+        when (it) {
+            is GameViewModel.Event.GameTimeEvent -> {
+                gameHostStates.gameTimerHostState.handle(
+                    stop = it.stopped,
+                    timeLeftMs = it.timeMs.toInt(),
+                    progress = it.percentage
+                )
+            }
+
+            is GameViewModel.Event.CrunchTimeEvent -> {
+                gameHostStates.crunchTimerHostState.handle(
+                    stop = it.stopped,
+                    timeLeftMs = it.timeMs.toInt(),
+                    progress = it.percentage
+                )
+            }
+
+            is GameViewModel.Event.SolvingResultEvent -> {
+                if (it.result.successful) {
+                    launch { gameHostStates.scoreUpdateHostState.show(it.result) }
+                    launch { gameHostStates.expectedUpdateHostState.hide() }
+                    launch { gameHostStates.colorUpdateHostState.success() }
+                } else {
+                    launch { gameHostStates.scoreUpdateHostState.hide() }
+                    launch { gameHostStates.expectedUpdateHostState.show(it.result) }
+                    launch { gameHostStates.colorUpdateHostState.fail() }
+                }
+            }
+
+            else -> {
+                /* do nothing */
+            }
+        }
     }
 
     GameScreenContent(
         uiState = uiState,
-        onStart = { viewModel.start() },
-        onPause = { viewModel.pause() },
-        onResume = { viewModel.resume() },
-        onQuit = { viewModel.quit() },
-        onSolve = { viewModel.solve() },
-        input = { input -> viewModel.updateInput(input) },
-        clear = { viewModel.clear() }
+        gameInteractions = gameInteractions,
+        settingsInteractions = settingsInteractions,
+        gameHostStates = gameHostStates
     )
 }
 
 @Composable
 fun GameScreenContent(
     uiState: GameViewModel.UiState,
-    onStart: () -> Unit = {},
-    onResume: () -> Unit = {},
-    onPause: () -> Unit = {},
-    onQuit: () -> Unit = {},
-    onSolve: () -> Unit = {},
-    input: (String) -> Unit = {},
-    clear: () -> Unit = {}
+    gameInteractions: GameInteractions = GameInteractions(),
+    settingsInteractions: SettingsInteractions = SettingsInteractions(),
+    gameHostStates: GameHostStates = GameHostStates(),
 ) {
-
-    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        GameInputsScreen(
-            uiState = uiState,
-            onPause = onPause,
-            onSolve = onSolve,
-            onQuit = onQuit,
-            input = input,
-            clear = clear
-        )
-
-        if (uiState.state == GameStatus.PAUSED) {
-            GamePauseScreen(onResume)
-        }
-
-        if (uiState.state == GameStatus.ENDED) {
-            GameOverScreen(onStart)
-        }
-
-        if (uiState.state == GameStatus.NOT_STARTED) {
-            GameNotStartedScreen(onStart)
-        }
-    }
-}
-
-@Composable
-private fun GameInputsScreen(
-    uiState: GameViewModel.UiState,
-    onPause: () -> Unit = {},
-    onQuit: () -> Unit = {},
-    onSolve: () -> Unit = {},
-    input: (String) -> Unit = {},
-    clear: () -> Unit = {}
-) {
-    val scoreUpdateHostState = remember { ScoreUpdateHostState() }
-    val color = remember { Animatable(Color.White) }
-
-    LaunchedEffect(uiState.score) {
-        if (uiState.score != null) {
-            if (uiState.score.successful) {
-                color.animateTo(Color.Green, animationSpec = tween(500))
-                color.animateTo(Color.White, animationSpec = tween(500))
-                scoreUpdateHostState.show(uiState.score)
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        if (uiState.status.current != GameViewModel.GameScreenStatus.NOT_LOADED) {
+            val configuration = LocalConfiguration.current
+            if (configuration.orientation == Configuration.ORIENTATION_LANDSCAPE) {
+                Row(modifier = Modifier.fillMaxWidth()) {
+                    LowerInput(
+                        modifier = Modifier
+                            .fillMaxHeight()
+                            .weight(UiDefaults.END_PERCENTAGE),
+                        gameInteractions = gameInteractions,
+                        isHorizontal = true
+                    )
+                    TopDisplay(
+                        modifier = Modifier
+                            .fillMaxHeight()
+                            .weight(UiDefaults.START_PERCENTAGE),
+                        uiState = uiState,
+                        gameHostStates = gameHostStates
+                    )
+                }
             } else {
-                color.animateTo(Color.Red, animationSpec = tween(500))
-                color.animateTo(Color.White, animationSpec = tween(500))
-                scoreUpdateHostState.hide()
+                Column(modifier = Modifier.fillMaxHeight()) {
+                    TopDisplay(
+                        modifier = Modifier
+                            .fillMaxHeight()
+                            .weight(UiDefaults.TOP_PERCENTAGE),
+                        uiState = uiState,
+                        gameHostStates = gameHostStates
+                    )
+                    LowerInput(
+                        modifier = Modifier
+                            .fillMaxHeight()
+                            .weight(UiDefaults.BOTTOM_PERCENTAGE),
+                        gameInteractions = gameInteractions
+                    )
+                }
             }
         }
-    }
-    Column {
-
-        uiState.gameOverTimeProgress?.percentage?.let {
-            TimerProgress(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(50.dp), progress = it
-            )
-        }
-        uiState.crunchTimeProgress?.percentage?.let {
-            TimerProgress(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(50.dp), progress = it
-            )
-            Log.i("WTFFF", "ddddd . ... $it")
-        }
-
-        Row() {
-            Text(
-                modifier = Modifier.weight(2f),
-                text = "Status: ${uiState.state.name} " +
-                        ":: Display ${uiState.crunch?.display} " +
-                        ":: Timeleft ${uiState.gameOverTimeProgress?.timeLeftMs}, " +
-                        ":: TimeleftCrunch ${uiState.crunchTimeProgress?.timeLeftMs}" +
-                        ":: Crunches solved ${uiState.crunchesSolved}" +
-                        ":: Score ${uiState.currentScore}"
-            )
-            ScoreUpdateHost(
-                modifier = Modifier
-                    .width(200.dp)
-                    .height(300.dp)
-                    .weight(1f),
-                hostState = scoreUpdateHostState
-            )
-        }
-
-        Text(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(color = color.value),
-            text = uiState.crunch?.display ?: "",
-            style = MaterialTheme.typography.displayLarge.copy(
-                fontSize = 60.sp
-            ),
-            textAlign = TextAlign.End
+        LoadingScreen(isVisible = uiState.status.current != GameViewModel.GameScreenStatus.RUNNING)
+        PauseScreen(
+            isVisible = uiState.status.current == GameViewModel.GameScreenStatus.PAUSED,
+            score = uiState.currentScore,
+            gameInteractions = gameInteractions,
+            settingsInteractions = settingsInteractions
         )
-
-        Text(
-            modifier = Modifier.fillMaxWidth(),
-            text = uiState.input,
-            style = MaterialTheme.typography.displayLarge.copy(
-                fontSize = 60.sp
-            )
+        GameOverScreen(
+            isVisible = uiState.status.current == GameViewModel.GameScreenStatus.ENDED,
+            score = uiState.currentScore,
+            highScore = uiState.highScore,
+            gameInteractions = gameInteractions
         )
-
-        Row {
-            Column {
-                Button(onClick = { input("1") }) {
-                    Text(text = "1")
-                }
-            }
-            Column {
-                Button(onClick = { input("2") }) {
-                    Text(text = "2")
-                }
-            }
-            Column {
-                Button(onClick = { input("3") }) {
-                    Text(text = "3")
-                }
-            }
-            Button(onClick = { onSolve() }) {
-                Text(text = "solve crunch!")
-            }
-            Button(onClick = onPause) {
-                Text(text = "Pause")
-            }
-        }
-
-        Row {
-            Column {
-                Button(onClick = { input("4") }) {
-                    Text(text = "4")
-                }
-            }
-            Column {
-                Button(onClick = { input("5") }) {
-                    Text(text = "5")
-                }
-            }
-            Column {
-                Button(onClick = { input("6") }) {
-                    Text(text = "6")
-                }
-            }
-            Button(onClick = { input("0") }) {
-                Text(text = "0")
-            }
-        }
-        Row {
-            Column {
-                Button(onClick = { input("7") }) {
-                    Text(text = "7")
-                }
-            }
-            Column {
-                Button(onClick = { input("8") }) {
-                    Text(text = "8")
-                }
-            }
-            Column {
-                Button(onClick = { input("9") }) {
-                    Text(text = "9")
-                }
-            }
-            Button(onClick = { input(".") }) {
-                Text(text = ".")
-            }
-        }
-
-        Button(onClick = clear) {
-            Text(text = "<-")
-        }
-
-        Column(
-            modifier = Modifier
-        ) {
-            Button(onClick = onQuit) {
-                Text(text = "Quit")
-            }
-        }
-    }
-}
-
-@Composable
-private fun GamePauseScreen(onResume: () -> Unit = {}) {
-    Text(text = "Game Paused")
-    Button(onClick = onResume) {
-        Text(text = "Resume Game!")
-    }
-}
-
-@Composable
-private fun GameOverScreen(onStart: () -> Unit = {}) {
-    Column(
-        modifier = Modifier.background(Color.Gray),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Text(text = "Game Over")
-        Button(onClick = onStart) {
-            Text(text = "Start new game!")
-        }
-    }
-}
-
-@Composable
-private fun GameNotStartedScreen(onStart: () -> Unit = {}) {
-    Column(
-        modifier = Modifier.background(Color.Gray),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Text(text = "Welcome!")
-        Button(onClick = onStart) {
-            Text(text = "Start new game!")
-        }
+        GameNotStartedScreen(
+            isVisible = uiState.status.current == GameViewModel.GameScreenStatus.NOT_STARTED,
+            gameInteractions = gameInteractions,
+            settingsInteractions = settingsInteractions
+        )
+        SettingsScreen(
+            isVisible = uiState.status.current == GameViewModel.GameScreenStatus.SETTINGS,
+            appSettings = uiState.settings,
+            settingsInteractions = settingsInteractions
+        )
+        LevelSelectScreen(
+            isVisible = uiState.status.current == GameViewModel.GameScreenStatus.CHOOSE_LEVEL,
+            gameInteractions = gameInteractions
+        )
     }
 }
 
 @Composable
 @Preview
-fun PreviewGameScreen() {
+fun PreviewGameScreenPortrait() {
     CrunchrTheme {
-        GameScreenContent(uiState = GameViewModel.UiState(state = GameStatus.ENDED))
+        GameScreenContent(
+            uiState = GameViewModel.UiState(
+                status = GameViewModel.ScreenStates(current = GameViewModel.GameScreenStatus.RUNNING),
+                crunch = Crunch(2000, 1, 2, Symbols.ADD),
+                input = "123"
+            )
+        )
     }
 }
+
+@Composable
+@Preview(widthDp = 800, heightDp = 450)
+fun PreviewGameScreenLandscape() {
+    CrunchrTheme {
+        val configuration = Configuration().apply {
+            orientation = Configuration.ORIENTATION_LANDSCAPE
+        }
+        CompositionLocalProvider(LocalConfiguration provides configuration) {
+            GameScreenContent(
+                uiState = GameViewModel.UiState(
+                    status = GameViewModel.ScreenStates(current = GameViewModel.GameScreenStatus.RUNNING),
+                    crunch = Crunch(2000, 1, 2, Symbols.ADD),
+                    input = "123"
+                )
+            )
+        }
+    }
+}
+        

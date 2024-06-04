@@ -1,19 +1,29 @@
 package de.ka.crunchr.domain
 
-import de.ka.crunchrgame.GameState
+import de.ka.crunchrgame.models.State
 
 /**
- * Handles saving & loading of [GameState]s.
+ * Handles saving & loading of [State]s.
  */
 interface AppGameSaver {
 
     /**
-     * Responsible for saving a complete [GameState].
+     * Responsible for saving a complete [State].
      */
-    suspend fun saveGameState(gameState: GameState)
+    suspend fun saveGameState(state: State)
 
     /**
-     * Loads a complete [GameState].
+     * Loads a complete [State].
      */
-    suspend fun loadGameState(): GameState?
+    suspend fun loadGameState(): State?
+}
+
+class StubAppGameSaver : AppGameSaver {
+    override suspend fun saveGameState(state: State) {
+        // do nothing
+    }
+
+    override suspend fun loadGameState(): State? {
+        return null
+    }
 }
