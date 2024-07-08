@@ -31,12 +31,14 @@ fun PauseScreen(
                 DefaultMenuEntry(
                     title = stringResource(id = R.string.paused_resume),
                     action = gameInteractions.onResume,
-                    color = MaterialTheme.colorScheme.onBackground
+                    color = MaterialTheme.colorScheme.onBackground,
+                    iconResId = R.drawable.ic_play
                 ),
                 SpacerMenuEntry,
                 DefaultMenuEntry(
                     title = stringResource(id = R.string.paused_settings),
-                    action = { settingsInteractions.onOpenSettings(true) }
+                    action = { settingsInteractions.onOpenSettings(true) },
+                    iconResId = R.drawable.ic_settings
                 ),
                 SpacerMenuEntry,
                 DefaultMenuEntry(
@@ -51,7 +53,8 @@ fun PauseScreen(
                 DefaultMenuEntry(
                     title = stringResource(id = R.string.paused_exit),
                     action = gameInteractions.onExit,
-                    color = MaterialTheme.colorScheme.onError
+                    color = MaterialTheme.colorScheme.onError,
+                    iconResId = R.drawable.ic_exit
                 )
             ),
             menuHint = {

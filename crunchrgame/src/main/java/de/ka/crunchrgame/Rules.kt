@@ -13,7 +13,7 @@ import kotlin.random.Random
  */
 internal object Rules {
 
-    const val MAX_TIME_MS = 30_000L
+    const val MAX_TIME_MS = 20_000L
     val MAX_POINTS = 0L..999999L
 
     private const val OKAY_DELTA: Float = 0.1f
@@ -24,13 +24,13 @@ internal object Rules {
     fun determineNewCrunch(level: Level): Crunch {
         var maxNum = 10
         var minNum = 1
-        if (level.value >= 10) {
+        if (level.value >= 5) {
             minNum = -10
         }
-        if (level.value >= 20) {
+        if (level.value >= 10) {
             maxNum = 15
         }
-        if (level.value >= 30) {
+        if (level.value >= 15) {
             minNum = -15
         }
         val symbol = with(level.symbols) {
@@ -39,7 +39,7 @@ internal object Rules {
         val first = Random.nextInt(minNum, maxNum).takeUnless { it == 0 } ?: 1
         val second = Random.nextInt(minNum, maxNum).takeUnless { it == 0 } ?: 1
 
-        val timeMs = 10_000 + 100 * level.value
+        val timeMs = 10_000
 
         return Crunch(
             firstNum = first,
@@ -109,7 +109,8 @@ internal object Rules {
      * Determines the current level for the given [score], starting with [startLevel].
      */
     fun determineLevel(startLevel: Level, score: Long): Level {
-        return Level(value = startLevel.value + (score / 500).toInt())
+        val aLevel = (score / 400).toInt()
+        return Level(value = startLevel.value + (score / (400 + aLevel * 10)).toInt())
     }
 
     /**
@@ -136,7 +137,8 @@ internal object Rules {
         level: Level,
     ): Long {
         return if (success) {
-            val successTimeMs = gameOverTimeMs + 10_000
+            val maxLevel = min(level.value, 200)
+            val successTimeMs = gameOverTimeMs + (10_000 - (maxLevel * 50))
             min(successTimeMs, gameOverElapsedTimeMs + MAX_TIME_MS)
         } else {
             gameOverTimeMs

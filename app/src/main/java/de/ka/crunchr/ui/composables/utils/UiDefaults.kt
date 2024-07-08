@@ -1,7 +1,6 @@
 package de.ka.crunchr.ui.composables.utils
 
 import android.view.animation.OvershootInterpolator
-import androidx.compose.animation.core.Easing
 import androidx.compose.animation.core.tween
 import androidx.compose.ui.unit.dp
 import de.ka.crunchr.R
@@ -9,6 +8,7 @@ import de.ka.crunchr.R
 object UiDefaults {
     val defaultStroke = 1.dp
     val sideMargin = 12.dp
+    val topMargin = 14.dp
     val smallPadding = 4.dp
     val tinyPadding = 1.dp
     val verySmallPadding = 2.dp
@@ -23,7 +23,7 @@ object UiDefaults {
     val buttonSize = 52.dp
     val editsSize = 30.dp
     val editsBigSize = 40.dp
-    val timerBigSize = 24.dp
+    val timerBigSize = 18.dp
     val timerSmallSize = 14.dp
     val smallButtonSize = 42.dp
     val defaultCheckBoxSize = 48.dp
@@ -34,8 +34,8 @@ object UiDefaults {
     const val WIDTH_PERCENTAGE = 0.75f
     const val DISPLAY_SIDE_WIDTH_PERCENTAGE = 0.32f
     const val DISPLAY_MIDDLE_WIDTH_PERCENTAGE = 0.4f
-    const val TOP_PERCENTAGE = 0.35f
-    const val BOTTOM_PERCENTAGE = 0.65f
+    const val TOP_PERCENTAGE = 0.38f
+    const val BOTTOM_PERCENTAGE = 0.62f
     const val START_PERCENTAGE = 0.45f
     const val END_PERCENTAGE = 0.55f
 
@@ -45,8 +45,8 @@ object UiDefaults {
     const val MEDIUM_MS = 300
     const val LONG_MS = 500
 
-    const val DELAY_LONG_MS = 4_000L
-    const val DELAY_VERY_LONG_MS = 4_500L
+    const val DELAY_LONG_MS = 3_000L
+    const val DELAY_VERY_LONG_MS = 3_500L
 
     val overshoot = tween<Float>(QUICK_MS, easing = {
         OvershootInterpolator().getInterpolation(it)

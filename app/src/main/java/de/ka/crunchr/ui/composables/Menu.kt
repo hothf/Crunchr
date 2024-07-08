@@ -1,5 +1,6 @@
 package de.ka.crunchr.ui.composables
 
+import androidx.annotation.DrawableRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -89,7 +90,9 @@ fun Menu(
                                 .fillMaxWidth()
                                 .height(UiDefaults.buttonSize),
                             tintColor = action.color ?: MaterialTheme.colorScheme.inversePrimary,
+                            foregroundColor = action.color ?: MaterialTheme.colorScheme.tertiary,
                             awaitOnTap = true,
+                            iconResId = action.iconResId,
                             onTap = action.action,
                             text = action.title
                         )
@@ -105,7 +108,8 @@ sealed interface MenuEntry
 data class DefaultMenuEntry(
     val title: String = "",
     val color: Color? = null,
-    val action: () -> Unit = {}
+    val action: () -> Unit = {},
+    @DrawableRes val iconResId: Int? = null
 ) : MenuEntry
 
 data object SpacerMenuEntry : MenuEntry

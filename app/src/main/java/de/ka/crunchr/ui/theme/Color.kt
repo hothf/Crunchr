@@ -14,8 +14,8 @@ val lightText = Color(0xFFFFFFFF)
 val darkText = Color(0xFF4f5364)
 
 val successGreen = Color(0xFFacf39d)
-val errorRed = Color(0xFFde2828)
+val errorRed = Color(0xFFff3e4d)
 
 val solveColor = Color(0xFF028918)
-val clearColor = Color(0xFFff3e4d)
+val clearColor = Color(0xFFce2828)
 val softColor = Color(0x88888888)

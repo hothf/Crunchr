@@ -196,15 +196,6 @@ private fun Update(
                         style = MaterialTheme.typography.labelLarge
                     )
                 }
-
-                Text(
-                    modifier = Modifier.padding(top = UiDefaults.defaultPaddings),
-                    textAlign = TextAlign.Center,
-                    text = points,
-                    color = MaterialTheme.colorScheme.error,
-                    style = MaterialTheme.typography.bodyMedium,
-                )
-
             }
 
         }

@@ -5,6 +5,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Icon
@@ -53,12 +54,23 @@ fun ActionButton(
                 textAlign = TextAlign.Center
             )
         } else {
-            Icon(
-                modifier = Modifier.padding(UiDefaults.defaultPaddings),
-                imageVector = ImageVector.vectorResource(id = iconResId),
-                contentDescription = text,
-                tint = tintColor
-            )
+            Row(modifier = Modifier.padding(UiDefaults.defaultPaddings)) {
+                Icon(
+                    modifier = Modifier,
+                    imageVector = ImageVector.vectorResource(id = iconResId),
+                    contentDescription = text,
+                    tint = tintColor
+                )
+                if (text.isNotEmpty()) {
+                    Text(
+                        modifier = Modifier.padding(horizontal = UiDefaults.smallPadding),
+                        text = text,
+                        style = MaterialTheme.typography.titleMedium,
+                        color = tintColor,
+                        textAlign = TextAlign.Center
+                    )
+                }
+            }
         }
 
     }
@@ -83,6 +95,11 @@ fun PreviewActionButton() {
             )
             ActionButton(
                 modifier = Modifier.height(100.dp),
+                iconResId = androidx.core.R.drawable.ic_call_decline
+            )
+            ActionButton(
+                modifier = Modifier.height(100.dp),
+                text = "Hello",
                 iconResId = androidx.core.R.drawable.ic_call_decline
             )
         }

@@ -1,5 +1,6 @@
 package de.ka.crunchr.ui.game.subscreens
 
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
@@ -28,7 +29,8 @@ fun LevelSelectScreen(
                 SpacerMenuEntry,
                 DefaultMenuEntry(
                     title = stringResource(id = R.string.settings_back),
-                    action = gameInteractions.onBack
+                    action = gameInteractions.onBack,
+                    iconResId = R.drawable.ic_back
                 )
             )
         )
@@ -39,7 +41,9 @@ fun LevelSelectScreen(
 private fun entryForLevel(level: Level, action: (level: Level) -> Unit): DefaultMenuEntry {
     return DefaultMenuEntry(
         title = stringResource(id = R.string.select_level, getLevelSymbols(level = level)),
-        action = { action(level) }
+        action = { action(level) },
+        color = MaterialTheme.colorScheme.onBackground,
+        iconResId = R.drawable.ic_play
     )
 }
 

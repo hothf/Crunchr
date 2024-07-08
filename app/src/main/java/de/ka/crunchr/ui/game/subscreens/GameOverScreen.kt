@@ -31,12 +31,15 @@ fun GameOverScreen(
                 DefaultMenuEntry(
                     title = stringResource(id = R.string.game_over_start),
                     action = gameInteractions.onQuit,
+                    color = MaterialTheme.colorScheme.onBackground,
+                    iconResId = R.drawable.ic_play
                 ),
                 SpacerMenuEntry,
                 DefaultMenuEntry(
                     title = stringResource(id = R.string.game_over_exit),
                     action = gameInteractions.onExit,
-                    color = MaterialTheme.colorScheme.onError
+                    color = MaterialTheme.colorScheme.onError,
+                    iconResId = R.drawable.ic_exit
                 )
             ),
             menuHint = {

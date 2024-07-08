@@ -26,6 +26,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.traceEventEnd
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -82,7 +83,7 @@ fun SolvingResultUpdateHost(
     val currentScore = hostState.currentSolvingResult
 
     LaunchedEffect(currentScore) {
-        delay(UiDefaults.DELAY_VERY_LONG_MS)
+        delay(UiDefaults.DELAY_LONG_MS)
         hostState.hide()
     }
 
@@ -108,7 +109,8 @@ fun SolvingResultUpdate(
             score = score.score,
             expected = score.expected,
             performance = score.performance,
-            showPerformance = showPerformance
+            showPerformance = showPerformance,
+            successful = score.successful
         )
     }
 }
@@ -121,6 +123,7 @@ private fun SingleUpdate(
     delay: Int = 0,
     expected: Float,
     performance: String,
+    successful: Boolean,
     showPerformance: Boolean
 ) {
     val alignment = if (showPerformance) Alignment.CenterStart else Alignment.CenterEnd
@@ -150,17 +153,22 @@ private fun SingleUpdate(
                         horizontal = UiDefaults.defaultPaddings,
                         vertical = UiDefaults.verySmallPadding
                     ) else Modifier
-                if (!showPerformance) {
+                if (!showPerformance && successful) {
                     Row(
                         modifier = Modifier
                             .clip(
                                 RoundedCornerShape(UiDefaults.defaultCorners)
                             )
                             .background(MaterialTheme.colorScheme.outline)
-                            .padding(start = UiDefaults.smallPadding, end = UiDefaults.defaultPaddings)
+                            .padding(
+                                start = UiDefaults.smallPadding,
+                                end = UiDefaults.defaultPaddings
+                            )
                     ) {
                         Icon(
-                            modifier = Modifier.size(UiDefaults.smallIconSize).padding(top = UiDefaults.mediumMargin),
+                            modifier = Modifier
+                                .size(UiDefaults.smallIconSize)
+                                .padding(top = UiDefaults.mediumMargin),
                             imageVector = ImageVector.vectorResource(id = UiDefaults.defaultCheckImageRes),
                             contentDescription = score,
                             tint = MaterialTheme.colorScheme.secondary
@@ -175,7 +183,15 @@ private fun SingleUpdate(
                             )
                         }
                     }
-                } else {
+                } else if (showPerformance && !successful) {
+                    Text(
+                        modifier = clipModifier.padding(vertical = UiDefaults.verySmallPadding),
+                        text = score,
+                        textAlign = TextAlign.Center,
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                } else if (showPerformance && successful) {
                     Text(
                         modifier = clipModifier.padding(vertical = UiDefaults.verySmallPadding),
                         text = "$score $performance",
@@ -224,14 +240,16 @@ fun PreviewResultUpdate() {
                 score = "1234",
                 performance = "okay",
                 expected = 12.2f,
-                showPerformance = false
+                showPerformance = false,
+                successful = false
             )
             SingleUpdate(
                 visible = true,
                 score = "1234",
                 performance = "okay okay! okay",
                 expected = 12.2f,
-                showPerformance = true
+                showPerformance = true,
+                successful = true
             )
         }
 

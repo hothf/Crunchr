@@ -27,7 +27,8 @@ fun SettingsScreen(
                 SpacerMenuEntry,
                 DefaultMenuEntry(
                     title = stringResource(id = R.string.settings_back),
-                    action = { settingsInteractions.onOpenSettings(false) }
+                    action = { settingsInteractions.onOpenSettings(false) },
+                    iconResId = R.drawable.ic_back
                 )
             ),
             middleContent = {

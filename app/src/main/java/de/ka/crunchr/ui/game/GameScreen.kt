@@ -2,18 +2,22 @@ package de.ka.crunchr.ui.game
 
 import android.content.res.Configuration
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.tooling.preview.Preview
 import de.ka.crunchr.ui.game.subscreens.GameNotStartedScreen
@@ -90,12 +94,11 @@ fun GameScreen(
             }
 
             is GameViewModel.Event.SolvingResultEvent -> {
+                launch { gameHostStates.scoreUpdateHostState.show(it.result) }
                 if (it.result.successful) {
-                    launch { gameHostStates.scoreUpdateHostState.show(it.result) }
                     launch { gameHostStates.expectedUpdateHostState.hide() }
                     launch { gameHostStates.colorUpdateHostState.success() }
                 } else {
-                    launch { gameHostStates.scoreUpdateHostState.hide() }
                     launch { gameHostStates.expectedUpdateHostState.show(it.result) }
                     launch { gameHostStates.colorUpdateHostState.fail() }
                 }
@@ -123,7 +126,7 @@ fun GameScreenContent(
     gameHostStates: GameHostStates = GameHostStates(),
 ) {
     Box(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.secondary),
         contentAlignment = Alignment.Center
     ) {
         if (uiState.status.current != GameViewModel.GameScreenStatus.NOT_LOADED) {
@@ -133,7 +136,8 @@ fun GameScreenContent(
                     LowerInput(
                         modifier = Modifier
                             .fillMaxHeight()
-                            .weight(UiDefaults.END_PERCENTAGE),
+                            .weight(UiDefaults.END_PERCENTAGE)
+                            .clip(RoundedCornerShape(UiDefaults.defaultCorners)),
                         gameInteractions = gameInteractions,
                         isHorizontal = true
                     )
@@ -157,7 +161,8 @@ fun GameScreenContent(
                     LowerInput(
                         modifier = Modifier
                             .fillMaxHeight()
-                            .weight(UiDefaults.BOTTOM_PERCENTAGE),
+                            .weight(UiDefaults.BOTTOM_PERCENTAGE)
+                            .clip(RoundedCornerShape(UiDefaults.defaultCorners)),
                         gameInteractions = gameInteractions
                     )
                 }

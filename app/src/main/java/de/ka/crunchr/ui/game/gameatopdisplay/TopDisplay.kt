@@ -6,11 +6,16 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -67,10 +72,7 @@ fun TopDisplay(
         verticalArrangement = Arrangement.SpaceAround
     ) {
         Column {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-            ) {
+            Row(modifier = Modifier.fillMaxWidth()) {
                 var score by remember {
                     mutableIntStateOf(
                         uiState.currentScore?.score?.toInt() ?: 0
@@ -140,7 +142,7 @@ fun TopDisplay(
                     .height(UiDefaults.timerBigSize)
                     .clip(RoundedCornerShape(UiDefaults.smallCorners)),
                 animateCloseCall = true,
-                color = MaterialTheme.colorScheme.onSecondary,
+                color = MaterialTheme.colorScheme.onSecondaryContainer,
                 hostState = gameHostStates.gameTimerHostState
             )
         }
@@ -149,23 +151,12 @@ fun TopDisplay(
                 .fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Column(
-                modifier = Modifier.weight(UiDefaults.DISPLAY_SIDE_WIDTH_PERCENTAGE),
-                verticalArrangement = Arrangement.Center
-            ) {
-                SolvingResultUpdateHost(
+            Box(modifier = Modifier.weight(UiDefaults.DISPLAY_SIDE_WIDTH_PERCENTAGE)) {
+                ExpectedUpdateHost(
                     modifier = Modifier
                         .fillMaxWidth(),
-                    hostState = gameHostStates.scoreUpdateHostState
+                    hostState = gameHostStates.expectedUpdateHostState
                 )
-                SolvingResultUpdateHost(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = UiDefaults.defaultPaddings),
-                    hostState = gameHostStates.scoreUpdateHostState,
-                    showPerformance = true
-                )
-
             }
             val rotation = remember { Animatable(0.0f) }
             val alpha = remember { Animatable(0f) }
@@ -196,7 +187,7 @@ fun TopDisplay(
                 ) {
                     Box(
                         modifier = Modifier
-                            .height(UiDefaults.editsSize)
+                            .height(UiDefaults.editsBigSize)
                             .graphicsLayer {
                                 rotationY = rotation.value
                                 cameraDistance = 12f * density
@@ -208,7 +199,7 @@ fun TopDisplay(
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            modifier = Modifier,
+                            modifier = Modifier.fillMaxWidth(),
                             text = text,
                             style = MaterialTheme.typography.titleMedium,
                             textAlign = TextAlign.Center,
@@ -224,7 +215,7 @@ fun TopDisplay(
                         .size(UiDefaults.timerSmallSize),
                     hostState = gameHostStates.crunchTimerHostState,
                     isCircular = true,
-                    color = MaterialTheme.colorScheme.onSecondary
+                    color = MaterialTheme.colorScheme.onSecondaryContainer
                 )
                 val translation = remember { Animatable(0f) }
                 LaunchedEffect(gameHostStates.expectedUpdateHostState.current) {
@@ -252,22 +243,52 @@ fun TopDisplay(
                         .clip(RoundedCornerShape(UiDefaults.defaultCorners)),
                     contentAlignment = Alignment.CenterStart
                 ) {
+                    val infiniteTransition = rememberInfiniteTransition(label = "alpha")
+                    val alphaAnim by infiniteTransition.animateFloat(
+                        initialValue = 1f,
+                        targetValue = 0f,
+                        animationSpec = infiniteRepeatable(
+                            animation = tween(UiDefaults.LONG_MS*2, easing = LinearEasing)
+                        ), label = "alpha"
+                    )
+                    Text(
+                        modifier = Modifier
+                            .padding(start = UiDefaults.defaultPaddings)
+                            .alpha(if (uiState.input.isNotEmpty()) 1f else alphaAnim),
+                        text = stringResource(
+                            id = R.string.game_display_caret
+                        ),
+                        style = MaterialTheme.typography.titleMedium,
+                        color = color.value
+                    )
                     Text(
                         modifier = Modifier.fillMaxWidth(),
                         text = uiState.input,
                         textAlign = TextAlign.Center,
                         style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.onSecondary
+                        color = color.value
                     )
                 }
+                Spacer(modifier = Modifier.size(UiDefaults.topMargin))
             }
 
-            Box(modifier = Modifier.weight(UiDefaults.DISPLAY_SIDE_WIDTH_PERCENTAGE)) {
-                ExpectedUpdateHost(
+            Column(
+                modifier = Modifier.weight(UiDefaults.DISPLAY_SIDE_WIDTH_PERCENTAGE),
+                verticalArrangement = Arrangement.Center
+            ) {
+                SolvingResultUpdateHost(
                     modifier = Modifier
                         .fillMaxWidth(),
-                    hostState = gameHostStates.expectedUpdateHostState
+                    hostState = gameHostStates.scoreUpdateHostState
                 )
+                SolvingResultUpdateHost(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = UiDefaults.defaultPaddings),
+                    hostState = gameHostStates.scoreUpdateHostState,
+                    showPerformance = true
+                )
+
             }
         }
     }

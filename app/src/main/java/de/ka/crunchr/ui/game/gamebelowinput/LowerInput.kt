@@ -65,6 +65,7 @@ private fun LowerInputVertical(
                         .weight(0.5f),
                     iconResId = R.drawable.ic_refresh,
                     onTap = gameInteractions.clear,
+                    foregroundColor = MaterialTheme.colorScheme.inversePrimary,
                     tintColor = MaterialTheme.colorScheme.onPrimary,
                     awaitOnTap = true
                 )
@@ -75,8 +76,9 @@ private fun LowerInputVertical(
                         .weight(1f),
                     iconResId = R.drawable.ic_done,
                     onTap = gameInteractions.onSolve,
-                    color = MaterialTheme.colorScheme.onBackground,
-                    tintColor = MaterialTheme.colorScheme.primary,
+                    foregroundColor = MaterialTheme.colorScheme.onBackground,
+                    color = MaterialTheme.colorScheme.primary,
+                    tintColor = MaterialTheme.colorScheme.onBackground,
                     awaitOnTap = true
                 )
                 ActionButton(
@@ -86,7 +88,8 @@ private fun LowerInputVertical(
                         .weight(0.5f),
                     iconResId = R.drawable.ic_skip,
                     onTap = gameInteractions.onResume,
-                    tintColor = MaterialTheme.colorScheme.error,
+                    foregroundColor = MaterialTheme.colorScheme.onError,
+                    tintColor = MaterialTheme.colorScheme.onError,
                     awaitOnTap = true
                 )
             }
@@ -164,6 +167,7 @@ private fun LowerInputHorizontal(
                         .weight(0.5f),
                     iconResId = R.drawable.ic_refresh,
                     onTap = gameInteractions.clear,
+                    foregroundColor = MaterialTheme.colorScheme.inversePrimary,
                     tintColor = MaterialTheme.colorScheme.inversePrimary,
                     awaitOnTap = true
                 )
@@ -174,8 +178,9 @@ private fun LowerInputHorizontal(
                         .weight(1f),
                     iconResId = R.drawable.ic_done,
                     onTap = gameInteractions.onSolve,
-                    color = MaterialTheme.colorScheme.onBackground,
-                    tintColor = MaterialTheme.colorScheme.primary,
+                    foregroundColor = MaterialTheme.colorScheme.onBackground,
+                    color = MaterialTheme.colorScheme.primary,
+                    tintColor = MaterialTheme.colorScheme.onBackground,
                     awaitOnTap = true
                 )
                 ActionButton(
@@ -185,6 +190,7 @@ private fun LowerInputHorizontal(
                         .weight(0.5f),
                     iconResId = R.drawable.ic_skip,
                     onTap = gameInteractions.onResume,
+                    foregroundColor = MaterialTheme.colorScheme.onError,
                     tintColor = MaterialTheme.colorScheme.onError,
                     awaitOnTap = true
                 )
