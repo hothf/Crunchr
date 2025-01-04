@@ -24,7 +24,7 @@ object UiDefaults {
     val editsSize = 30.dp
     val editsBigSize = 40.dp
     val timerBigSize = 18.dp
-    val timerSmallSize = 14.dp
+    val timerSmallSize = 28.dp
     val smallButtonSize = 42.dp
     val defaultCheckBoxSize = 48.dp
 

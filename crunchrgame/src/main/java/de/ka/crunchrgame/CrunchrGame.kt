@@ -97,9 +97,6 @@ class CrunchrGame(private var coroutineScope: CoroutineScope?) {
         state = state.copy(status = Status.RUNNING)
         notifyGameStateStatus()
 
-        //startGameOverTimer()
-        //newCrunch()
-
         solve(null)
     }
 

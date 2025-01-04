@@ -6,6 +6,7 @@
 
     <string name="game_score">Score: </string>
     <string name="game_level">Level: </string>
+    <string name="game_time">Time left: </string>
     <string name="game_display_caret">\></string>
 
     <string name="not_started_title">Welcome to Crunchr!</string>

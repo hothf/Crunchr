@@ -19,7 +19,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -49,7 +48,7 @@ class TimerHostState {
             current = TimeProgress(timeLeftMs = 0, progress = progress, started = false)
             delay(100)
         } else {
-            current = TimeProgress(timeLeftMs = 75, progress = progress, started = true)
+            current = TimeProgress(timeLeftMs = timeLeftMs, progress = progress, started = false)
             delay(100)
             current = TimeProgress(timeLeftMs = timeLeftMs, progress = 0.0f, started = true)
         }
@@ -166,7 +165,6 @@ private fun DrawScope.drawLinearIndicator(
 fun PreviewTimerProgress() {
     MaterialTheme {
         val hostState = remember { TimerHostState() }
-        val scope = rememberCoroutineScope()
 
         LaunchedEffect(Unit) {
             hostState.handle(false, 5_000, 1.0f)

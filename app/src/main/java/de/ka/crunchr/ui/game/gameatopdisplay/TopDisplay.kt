@@ -36,7 +36,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -47,6 +46,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import de.ka.crunchr.R
 import de.ka.crunchr.ui.composables.ExpectedUpdateHost
 import de.ka.crunchr.ui.composables.SolvingResultUpdateHost
+import de.ka.crunchr.ui.composables.TimeLeftHost
 import de.ka.crunchr.ui.composables.TimerProgressHost
 import de.ka.crunchr.ui.composables.getColorUpdate
 import de.ka.crunchr.ui.composables.utils.UiDefaults
@@ -92,17 +92,17 @@ fun TopDisplay(
                 }
                 Text(
                     modifier = Modifier
-                        .weight(1f)
-                        .padding(end = UiDefaults.smallPadding),
+                        .weight(1f),
+
                     text = buildAnnotatedString {
-                        append(stringResource(id = R.string.game_score))
+                        append(stringResource(id = R.string.game_level))
                         withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
-                            append("$scoreCounter")
+                            append(" ${uiState.currentScore?.level?.value}")
                         }
                     },
                     textAlign = TextAlign.Start,
                     style = MaterialTheme.typography.titleSmall,
-                    color = color.value
+                    color = MaterialTheme.colorScheme.onSecondary
                 )
                 Text(
                     modifier = Modifier
@@ -121,20 +121,35 @@ fun TopDisplay(
                 )
                 Text(
                     modifier = Modifier
-                        .weight(1f)
-                        .padding(start = UiDefaults.smallPadding),
+                        .weight(1f),
+
                     text = buildAnnotatedString {
-                        append(stringResource(id = R.string.game_level))
+                        append(stringResource(id = R.string.game_score))
                         withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
-                            append("${uiState.currentScore?.level?.value}")
+                            append(" $scoreCounter")
                         }
                     },
                     textAlign = TextAlign.End,
                     style = MaterialTheme.typography.titleSmall,
+                    color = color.value
+                )
+            }
+
+            TimeLeftHost(
+                timerHostState = gameHostStates.gameTimerHostState
+            ) { time ->
+                Text(
+                    text = buildAnnotatedString {
+                        append(stringResource(R.string.game_time))
+                        withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
+                            append(" ${stringResource(R.string.time_seconds, "${time / 1000}")}")
+                        }
+                    },
+                    style = MaterialTheme.typography.titleSmall,
                     color = MaterialTheme.colorScheme.onSecondary
                 )
-
             }
+
             TimerProgressHost(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -207,16 +222,27 @@ fun TopDisplay(
                         )
                     }
                 }
-                TimerProgressHost(
-                    modifier = Modifier
-                        .padding(
-                            vertical = UiDefaults.bigPaddings
+
+                Box(
+                    modifier = Modifier.padding(vertical = UiDefaults.bigPaddings),
+                    contentAlignment = Alignment.Center
+                ) {
+                    TimerProgressHost(
+                        modifier = Modifier
+                            .size(UiDefaults.timerSmallSize),
+                        hostState = gameHostStates.crunchTimerHostState,
+                        isCircular = true,
+                        color = MaterialTheme.colorScheme.onSecondaryContainer
+                    )
+                    TimeLeftHost(timerHostState = gameHostStates.crunchTimerHostState) { time ->
+                        Text(
+                            text = "${time / 1000}",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSecondary
                         )
-                        .size(UiDefaults.timerSmallSize),
-                    hostState = gameHostStates.crunchTimerHostState,
-                    isCircular = true,
-                    color = MaterialTheme.colorScheme.onSecondaryContainer
-                )
+                    }
+                }
+
                 val translation = remember { Animatable(0f) }
                 LaunchedEffect(gameHostStates.expectedUpdateHostState.current) {
                     val result = gameHostStates.expectedUpdateHostState.current
@@ -248,7 +274,7 @@ fun TopDisplay(
                         initialValue = 1f,
                         targetValue = 0f,
                         animationSpec = infiniteRepeatable(
-                            animation = tween(UiDefaults.LONG_MS*2, easing = LinearEasing)
+                            animation = tween(UiDefaults.LONG_MS * 2, easing = LinearEasing)
                         ), label = "alpha"
                     )
                     Text(
@@ -293,9 +319,6 @@ fun TopDisplay(
         }
     }
 }
-
-@Composable
-fun Float.pxToDp() = with(LocalDensity.current) { this@pxToDp.toDp() }
 
 @Preview
 @Composable
