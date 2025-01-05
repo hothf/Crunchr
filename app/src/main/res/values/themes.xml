@@ -2,7 +2,7 @@
 <resources>
 
     <style name="Theme.Splash" parent="Theme.SplashScreen">
-        <item name="windowSplashScreenBackground">@color/primary_light</item>
+        <item name="windowSplashScreenBackground">@color/background</item>
         <item name="postSplashScreenTheme">@style/Theme.Crunchr</item>
         <item name="windowSplashScreenAnimatedIcon">@drawable/splash_anim</item>
     </style>

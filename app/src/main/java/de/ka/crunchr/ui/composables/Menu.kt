@@ -1,5 +1,6 @@
 package de.ka.crunchr.ui.composables
 
+import android.content.res.Configuration
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -10,6 +11,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -21,80 +23,192 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
 import de.ka.crunchr.ui.composables.utils.UiDefaults
 import de.ka.crunchr.ui.composables.utils.innerShadow
+import de.ka.crunchr.ui.theme.CrunchrTheme
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 @Composable
 fun Menu(
+    isVisible: Boolean,
     menuTitle: String,
+    padTitle: Boolean = false,
     menuHint: @Composable ColumnScope.() -> Unit = {},
-    middleContent: @Composable ColumnScope.() -> Unit = {},
+    middleContent: @Composable ColumnScope.() -> Int = { 0 },
     menuEntries: List<MenuEntry>
 ) {
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.secondary)
             .clickable(
                 interactionSource = MutableInteractionSource(),
                 indication = null,
                 onClick = {}),
         contentAlignment = Alignment.Center
     ) {
-        Column(
-            modifier = Modifier
-                .padding(UiDefaults.sideMargin)
-                .fillMaxWidth(0.85f)
-                .clip(RoundedCornerShape(UiDefaults.defaultCorners))
-                .background(MaterialTheme.colorScheme.primary)
-                .innerShadow(blur = UiDefaults.blurRadius, hideSides = false)
-                .padding(UiDefaults.bigPaddings),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(UiDefaults.bigPaddings)
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(UiDefaults.defaultCorners))
-                    .background(MaterialTheme.colorScheme.secondary)
-                    .padding(UiDefaults.bigPaddings),
-            ) {
-                Text(
+        val configuration = LocalConfiguration.current
+        if (configuration.orientation == Configuration.ORIENTATION_LANDSCAPE) {
+            Row(modifier = Modifier.fillMaxWidth()) {
+                ButtonsMenuContent(
                     modifier = Modifier
+                        .fillMaxHeight()
                         .fillMaxWidth()
-                        .padding(UiDefaults.defaultPaddings),
-                    text = menuTitle,
-                    style = MaterialTheme.typography.titleMedium,
-                    textAlign = TextAlign.Center,
-                    color = MaterialTheme.colorScheme.onSecondary
+                        .weight(UiDefaults.END_PERCENTAGE),
+                    menuEntries = menuEntries,
+                    middleContent = middleContent,
+                    isHorizontal = true,
+                    isVisible = isVisible
                 )
-                menuHint()
+                DisplayMenuContent(
+                    modifier = Modifier
+                        .fillMaxHeight()
+                        .padding(end = UiDefaults.bigPaddings)
+                        .clip(RoundedCornerShape(UiDefaults.defaultCorners))
+                        .background(MaterialTheme.colorScheme.surfaceVariant)
+                        .innerShadow(
+                            blur = UiDefaults.blurRadius,
+                            hideSides = false,
+                            color = MaterialTheme.colorScheme.tertiary,
+                            cornersRadius = UiDefaults.defaultCorners
+                        )
+                        .weight(UiDefaults.START_PERCENTAGE),
+                    menuTitle = menuTitle,
+                    menuHint = menuHint,
+                    hasEntries = padTitle
+                )
             }
+        } else {
             Column(
-                modifier = Modifier.verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(UiDefaults.defaultPaddings)
+                modifier = Modifier.fillMaxHeight(),
+                verticalArrangement = Arrangement.Center
             ) {
-                middleContent()
-                menuEntries.forEach { action ->
-                    if (action is SpacerMenuEntry) {
-                        Spacer(modifier = Modifier.size(UiDefaults.defaultSpacer))
-                    } else if (action is DefaultMenuEntry) {
+                DisplayMenuContent(
+                    modifier = Modifier
+                        .padding(top = UiDefaults.bigPaddings)
+                        .fillMaxHeight()
+                        .clip(RoundedCornerShape(UiDefaults.defaultCorners))
+                        .background(MaterialTheme.colorScheme.surfaceVariant)
+                        .innerShadow(
+                            blur = UiDefaults.blurRadius,
+                            hideSides = false,
+                            color = MaterialTheme.colorScheme.tertiary,
+                            cornersRadius = UiDefaults.defaultCorners
+                        )
+                        .weight(UiDefaults.TOP_PERCENTAGE),
+                    menuTitle = menuTitle,
+                    hasEntries = padTitle,
+                    menuHint = menuHint
+                )
+                ButtonsMenuContent(
+                    modifier = Modifier
+                        .fillMaxHeight()
+                        .weight(UiDefaults.BOTTOM_PERCENTAGE)
+                        .clip(RoundedCornerShape(UiDefaults.defaultCorners)),
+                    menuEntries = menuEntries,
+                    middleContent = middleContent,
+                    isVisible = isVisible
+                )
+            }
+        }
+
+
+    }
+}
+
+@Composable
+private fun DisplayMenuContent(
+    modifier: Modifier,
+    menuTitle: String,
+    hasEntries: Boolean,
+    menuHint: @Composable ColumnScope.() -> Unit = {},
+) {
+    Column(
+        modifier = modifier.padding(UiDefaults.defaultPaddings),
+        verticalArrangement = Arrangement.Center
+    ) {
+        Text(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(UiDefaults.bigPaddings),
+            text = menuTitle,
+            style = MaterialTheme.typography.titleMedium,
+            textAlign = TextAlign.Center,
+            color = MaterialTheme.colorScheme.onSecondary
+        )
+        menuHint()
+    }
+}
+
+@Composable
+private fun ButtonsMenuContent(
+    modifier: Modifier,
+    middleContent: @Composable ColumnScope.() -> Int = { 0 },
+    menuEntries: List<MenuEntry>,
+    isHorizontal: Boolean = false,
+    isVisible: Boolean
+) {
+    Column(
+        modifier = modifier
+            .padding(
+                top = if (isHorizontal) 0.dp else UiDefaults.buttonSize + UiDefaults.defaultPaddings + UiDefaults.defaultPaddings,
+                bottom = if (isHorizontal) 0.dp else UiDefaults.defaultPaddings + UiDefaults.smallButtonSize + UiDefaults.defaultPaddings,
+                start = if (isHorizontal) UiDefaults.defaultPaddings + UiDefaults.smallButtonSize + UiDefaults.defaultPaddings else 0.dp,
+                end = if (isHorizontal) UiDefaults.defaultPaddings + UiDefaults.smallButtonSize + UiDefaults.defaultPaddings else 0.dp,
+            )
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(UiDefaults.defaultCorners))
+            .background(MaterialTheme.colorScheme.primary)
+            .innerShadow(
+                blur = UiDefaults.blurRadius,
+                hideSides = false,
+                cornersRadius = UiDefaults.defaultCorners
+            )
+            .verticalScroll(rememberScrollState())
+            .padding(vertical = UiDefaults.bigPaddings),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+
+        Column(
+            modifier = Modifier.fillMaxWidth(0.75f),
+            verticalArrangement = Arrangement.spacedBy(UiDefaults.defaultPaddings)
+        ) {
+            val size = middleContent()
+            menuEntries.forEachIndexed { index, action ->
+                if (action is SpacerMenuEntry) {
+                    Spacer(modifier = Modifier.size(UiDefaults.defaultSpacer))
+                } else if (action is DefaultMenuEntry) {
+                    SlidingInContent(index = size + index, isVisible = isVisible) {
                         ActionButton(
                             modifier = Modifier
                                 .fillMaxWidth()
+                                .padding(horizontal = UiDefaults.smallPadding)
                                 .height(UiDefaults.buttonSize),
-                            tintColor = action.color ?: MaterialTheme.colorScheme.inversePrimary,
-                            foregroundColor = action.color ?: MaterialTheme.colorScheme.tertiary,
+                            foregroundColor = if (action.color != null) MaterialTheme.colorScheme.secondary.copy(
+                                alpha = 0.75f
+                            ) else null,
+                            tintColor = if (action.color != null) MaterialTheme.colorScheme.onSecondary else MaterialTheme.colorScheme.secondary,
                             awaitOnTap = true,
                             iconResId = action.iconResId,
                             onTap = action.action,
-                            text = action.title
+                            text = action.title,
+                            cornerRadius = UiDefaults.smallIconSize
                         )
                     }
                 }
@@ -124,7 +238,10 @@ fun MenuRows(rows: List<MenuRow>) {
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Text(
-                modifier = Modifier.weight(0.3f),
+                modifier = Modifier
+                    .weight(0.3f)
+                    .padding(end = UiDefaults.smallPadding),
+                textAlign = TextAlign.End,
                 text = text,
                 color = MaterialTheme.colorScheme.onSecondaryContainer,
                 style = MaterialTheme.typography.bodySmall
@@ -133,15 +250,17 @@ fun MenuRows(rows: List<MenuRow>) {
                 Text(
                     modifier = Modifier.weight(0.35f),
                     text = special,
-                    textAlign = TextAlign.Start,
+                    textAlign = TextAlign.Center,
                     color = MaterialTheme.colorScheme.onSecondary,
                     style = MaterialTheme.typography.bodyMedium
                 )
             }
             Text(
-                modifier = Modifier.weight(0.35f),
+                modifier = Modifier
+                    .weight(0.35f)
+                    .padding(start = UiDefaults.smallPadding),
                 text = desc,
-                textAlign = TextAlign.End,
+                textAlign = TextAlign.Start,
                 color = MaterialTheme.colorScheme.onSecondary,
                 style = MaterialTheme.typography.bodyMedium
             )
@@ -154,21 +273,43 @@ data class MenuRow(val value: String, val description: String, val isSpecial: St
 @Composable
 @Preview
 fun PreviewMenu() {
-    MaterialTheme {
-        Menu(
-            menuTitle = "Game Over",
-            menuHint = {
-                MenuRows(
-                    rows = listOf(
-                        MenuRow("Hello", "1234"),
-                        MenuRow("Hello", "1234"),
-                        MenuRow("Hello", "1234", "OKay!"),
-                        MenuRow("Hello", "1234"),
-                        MenuRow("Hello", "1234", "Personal Best!"),
+    CrunchrTheme {
+        var visible by remember { mutableStateOf(true) }
+
+        val scope = rememberCoroutineScope()
+
+        LaunchedEffect(Unit) {
+            scope.launch {
+                delay(1000)
+                visible = true
+            }
+        }
+
+        val configuration = Configuration().apply {
+            orientation = Configuration.ORIENTATION_LANDSCAPE
+        }
+        CompositionLocalProvider(LocalConfiguration provides configuration) {
+
+            Menu(
+                isVisible = visible,
+                menuTitle = "Game Over",
+                padTitle = true,
+                menuHint = {
+                    MenuRows(
+                        rows = listOf(
+                            MenuRow("Hello", "1234"),
+                            MenuRow("Hello", "1234"),
+                            MenuRow("Hello", "1234", "OKay!"),
+                            MenuRow("Hello", "1234"),
+                            MenuRow("Hello", "1234", "Personal Best!"),
+                        )
                     )
+                },
+                menuEntries = listOf(
+                    DefaultMenuEntry("Resume", Color.Blue),
+                    DefaultMenuEntry("Exit")
                 )
-            },
-            menuEntries = listOf(DefaultMenuEntry("Resume", Color.Blue), DefaultMenuEntry("Exit"))
-        )
+            )
+        }
     }
 }

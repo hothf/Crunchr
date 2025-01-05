@@ -1,6 +1,8 @@
 package de.ka.crunchr.ui.game.subscreens
 
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -11,7 +13,9 @@ import de.ka.crunchr.ui.composables.ActionCheckBox
 import de.ka.crunchr.ui.composables.AnimatedContainer
 import de.ka.crunchr.ui.composables.DefaultMenuEntry
 import de.ka.crunchr.ui.composables.Menu
+import de.ka.crunchr.ui.composables.SlidingInContent
 import de.ka.crunchr.ui.composables.SpacerMenuEntry
+import de.ka.crunchr.ui.composables.utils.UiDefaults
 import de.ka.crunchr.ui.game.SettingsInteractions
 import de.ka.crunchr.ui.theme.CrunchrTheme
 
@@ -23,6 +27,7 @@ fun SettingsScreen(
 ) {
     AnimatedContainer(isVisible = isVisible) {
         Menu(
+            isVisible = isVisible,
             menuTitle = stringResource(id = R.string.settings_title), menuEntries = listOf(
                 SpacerMenuEntry,
                 DefaultMenuEntry(
@@ -32,22 +37,39 @@ fun SettingsScreen(
                 )
             ),
             middleContent = {
-                ActionCheckBox(
-                    modifier = Modifier.fillMaxWidth(),
-                    awaitOnTap = true,
-                    checked = appSettings.isVibrationEnabled,
-                    text = stringResource(id = R.string.settings_vibration),
-                    onTap = {
-                        settingsInteractions.onSettingsChanged(true, false)
-                    })
-                ActionCheckBox(
-                    modifier = Modifier.fillMaxWidth(),
-                    awaitOnTap = true,
-                    checked = appSettings.isSoundEnabled,
-                    text = stringResource(id = R.string.settings_sound),
-                    onTap = {
-                        settingsInteractions.onSettingsChanged(false, true)
-                    })
+                SlidingInContent(
+                    isVisible = isVisible,
+                    index = 0
+                ) {
+                    ActionCheckBox(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(UiDefaults.smallPadding),
+                        awaitOnTap = true,
+                        checked = appSettings.isVibrationEnabled,
+                        tintColor = MaterialTheme.colorScheme.onSecondary,
+                        text = stringResource(id = R.string.settings_vibration),
+                        onTap = {
+                            settingsInteractions.onSettingsChanged(true, false)
+                        })
+                }
+                SlidingInContent(
+                    isVisible = isVisible,
+                    index = 1
+                ) {
+                    ActionCheckBox(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(UiDefaults.smallPadding),
+                        awaitOnTap = true,
+                        checked = appSettings.isSoundEnabled,
+                        tintColor = MaterialTheme.colorScheme.onSecondary,
+                        text = stringResource(id = R.string.settings_sound),
+                        onTap = {
+                            settingsInteractions.onSettingsChanged(false, true)
+                        })
+                }
+                2
             }
         )
     }

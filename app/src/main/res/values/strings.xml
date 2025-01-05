@@ -6,8 +6,10 @@
 
     <string name="game_score">Score: </string>
     <string name="game_level">Level: </string>
-    <string name="game_time">Time left: </string>
-    <string name="game_display_caret">\></string>
+    <string name="game_time">left</string>
+    <string name="game_display_caret">&lt;</string>
+    <string name="game_starting">"…"</string>
+    <string name="game_starts">Get Ready</string>
 
     <string name="not_started_title">Welcome to Crunchr!</string>
     <string name="not_start_new">Start new Crunch</string>
@@ -47,7 +49,7 @@
     <string name="performance_great">Great</string>
     <string name="performance_perfect">Perfect</string>
     <string name="performance_streak">%d-Streak</string>
-    <string name="performance_multiplier">\nx%s</string>
+    <string name="performance_multiplier">x%s</string>
     <string name="performance_points_pos">+%d</string>
     <string name="performance_points_neg">%d</string>
 

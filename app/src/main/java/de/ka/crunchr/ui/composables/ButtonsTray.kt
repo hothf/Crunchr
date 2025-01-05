@@ -1,6 +1,5 @@
 package de.ka.crunchr.ui.composables
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -11,14 +10,15 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
 import de.ka.crunchr.ui.composables.utils.UiDefaults
-import de.ka.crunchr.ui.composables.utils.innerShadow
 
 @Composable
-fun ButtonsTray(modifier: Modifier = Modifier, input: (String) -> Unit = {}) {
+fun ButtonsTray(
+    modifier: Modifier = Modifier,
+    buttonsEnabled: Boolean = true,
+    input: (String) -> Unit = {}
+) {
     Column(
         modifier = modifier.fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -37,70 +37,93 @@ fun ButtonsTray(modifier: Modifier = Modifier, input: (String) -> Unit = {}) {
             modifier = rowModifier,
             horizontalArrangement = Arrangement.Center,
         ) {
-            ActionButton(
+            SlideInButton(
                 modifier = midModifier,
+                isVisible = buttonsEnabled,
+                row = 0,
                 text = "1",
-                onTap = { input("1") },
+                onTap = { input("1") }
             )
-            ActionButton(
+            SlideInButton(
                 modifier = midModifier,
+                isVisible = buttonsEnabled,
+                row = 0,
                 text = "2",
                 onTap = { input("2") }
             )
-            ActionButton(
+            SlideInButton(
                 modifier = midModifier,
+                isVisible = buttonsEnabled,
+                row = 0,
                 text = "3",
                 onTap = { input("3") }
             )
         }
         Row(modifier = rowModifier) {
-            ActionButton(
+            SlideInButton(
                 modifier = midModifier,
+                isVisible = buttonsEnabled,
+                row = 1,
                 text = "4",
                 onTap = { input("4") }
             )
-            ActionButton(
+            SlideInButton(
                 modifier = midModifier,
+                isVisible = buttonsEnabled,
+                row = 1,
                 text = "5",
                 onTap = { input("5") }
             )
-            ActionButton(
+            SlideInButton(
                 modifier = midModifier,
+                isVisible = buttonsEnabled,
+                row = 1,
                 text = "6",
                 onTap = { input("6") }
             )
-
         }
         Row(modifier = rowModifier) {
-            ActionButton(
+            SlideInButton(
                 modifier = midModifier,
+                isVisible = buttonsEnabled,
+                row = 2,
                 text = "7",
                 onTap = { input("7") }
             )
-            ActionButton(
+            SlideInButton(
                 modifier = midModifier,
+                isVisible = buttonsEnabled,
+                row = 2,
                 text = "8",
                 onTap = { input("8") }
             )
-            ActionButton(
+            SlideInButton(
                 modifier = midModifier,
+                isVisible = buttonsEnabled,
+                row = 2,
                 text = "9",
                 onTap = { input("9") }
             )
         }
         Row(modifier = rowModifier) {
-            ActionButton(
+            SlideInButton(
                 modifier = midModifier,
+                isVisible = buttonsEnabled,
+                row = 3,
                 text = "0",
                 onTap = { input("0") }
             )
-            ActionButton(
+            SlideInButton(
                 modifier = midModifier,
+                isVisible = buttonsEnabled,
+                row = 3,
                 text = ".",
                 onTap = { input(".") }
             )
-            ActionButton(
+            SlideInButton(
                 modifier = midModifier,
+                isVisible = buttonsEnabled,
+                row = 3,
                 text = "-",
                 onTap = { input("-") }
             )
@@ -108,6 +131,25 @@ fun ButtonsTray(modifier: Modifier = Modifier, input: (String) -> Unit = {}) {
     }
 
 
+}
+
+@Composable
+private fun SlideInButton(
+    modifier: Modifier,
+    row: Int,
+    text: String,
+    isVisible: Boolean,
+    onTap: () -> Unit
+) {
+    SlidingInContent(modifier = modifier, isVisible = isVisible, index = row) {
+        ActionButton(
+            enabled = isVisible,
+            modifier = modifier,
+            text = text,
+            onTap = onTap,
+            cornerRadius = UiDefaults.smallIconSize,
+        )
+    }
 }
 
 @Preview(heightDp = 800)

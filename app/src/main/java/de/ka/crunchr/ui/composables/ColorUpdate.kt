@@ -17,6 +17,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import de.ka.crunchr.ui.composables.utils.UiDefaults
@@ -33,6 +34,10 @@ class ColorUpdateHostState {
         current = ColorUpdate(isShown = true, animationEnded = false)
     }
 
+    fun reset() {
+        current = ColorUpdate()
+    }
+
     fun fail() {
         current = ColorUpdate(isShown = false, animationEnded = false)
     }
@@ -45,7 +50,7 @@ class ColorUpdateHostState {
 @Composable
 fun getColorUpdate(
     hostState: ColorUpdateHostState,
-    defaultColor: Color = MaterialTheme.colorScheme.onSecondary,
+    defaultColor: Color = MaterialTheme.colorScheme.secondary,
     successColor: Color =  MaterialTheme.colorScheme.outline,
     errorColor: Color = MaterialTheme.colorScheme.error
 ): Animatable<Color, AnimationVector4D> {

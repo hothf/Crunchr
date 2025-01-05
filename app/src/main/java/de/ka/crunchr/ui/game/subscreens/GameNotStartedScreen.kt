@@ -25,23 +25,20 @@ fun GameNotStartedScreen(
                 DefaultMenuEntry(
                     title = stringResource(id = R.string.not_start_new),
                     action = settingsInteractions.onOpenLevelSelect,
-                    color = MaterialTheme.colorScheme.onBackground,
-                    iconResId = R.drawable.ic_play
+                    color = MaterialTheme.colorScheme.onBackground
                 ),
                 SpacerMenuEntry,
                 DefaultMenuEntry(
                     title = stringResource(id = R.string.not_started_settings),
-                    action = { settingsInteractions.onOpenSettings(true) },
-                    iconResId = R.drawable.ic_settings
+                    action = { settingsInteractions.onOpenSettings(true) }
                 ),
                 SpacerMenuEntry,
                 DefaultMenuEntry(
                     title = stringResource(id = R.string.not_started_exit),
-                    action = gameInteractions.onExit,
-                    color = MaterialTheme.colorScheme.onError,
-                    iconResId = R.drawable.ic_exit
+                    action = gameInteractions.onExit
                 )
-            )
+            ),
+            isVisible = isVisible
         )
     }
 }

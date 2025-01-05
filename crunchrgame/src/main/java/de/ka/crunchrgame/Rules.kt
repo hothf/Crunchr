@@ -51,16 +51,18 @@ internal object Rules {
 
     /**
      * Determines the [result][Result] of a crunch.
+     *
+     * If you do not provide an input, will determine a failed attempt.
      */
     fun determineCrunchResult(
+        crunch: Crunch,
         input: Float? = null,
-        expected: Float,
         neededTimeMs: Long? = null,
         lastSolvingTimeMs: Long? = null,
         streakCount: Int = 0,
         currentLevel: Level = Level()
     ): Result {
-        val success = input != null && abs(expected - input) <= OKAY_DELTA
+        val success = input != null && abs(crunch.expected - input) <= OKAY_DELTA
 
         var count = streakCount
         if (neededTimeMs != null && lastSolvingTimeMs != null && lastSolvingTimeMs < 4000 && neededTimeMs < 4000) {
@@ -70,7 +72,7 @@ internal object Rules {
         }
 
         if (!success || neededTimeMs == null) {
-            return Result(false, input, expected, count, 0f, -250, null)
+            return Result(false, input, crunch, count, 0f, -250, null)
         }
 
         val timeMultiplier = when {
@@ -97,7 +99,7 @@ internal object Rules {
         return Result(
             true,
             input,
-            expected,
+            crunch,
             count,
             multiplier,
             finalPoints,

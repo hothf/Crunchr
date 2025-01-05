@@ -21,6 +21,7 @@ fun LevelSelectScreen(
 ) {
     AnimatedContainer(isVisible = isVisible) {
         Menu(
+            isVisible = isVisible,
             menuTitle = stringResource(id = R.string.select_level_title),
             menuEntries = listOf(
                 entryForLevel(level = Level(1), action = gameInteractions.onStart),
@@ -42,8 +43,7 @@ private fun entryForLevel(level: Level, action: (level: Level) -> Unit): Default
     return DefaultMenuEntry(
         title = stringResource(id = R.string.select_level, getLevelSymbols(level = level)),
         action = { action(level) },
-        color = MaterialTheme.colorScheme.onBackground,
-        iconResId = R.drawable.ic_play
+        color = MaterialTheme.colorScheme.onBackground
     )
 }
 

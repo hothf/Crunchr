@@ -31,17 +31,16 @@ fun GameOverScreen(
                 DefaultMenuEntry(
                     title = stringResource(id = R.string.game_over_start),
                     action = gameInteractions.onQuit,
-                    color = MaterialTheme.colorScheme.onBackground,
-                    iconResId = R.drawable.ic_play
+                    color = MaterialTheme.colorScheme.onBackground
                 ),
                 SpacerMenuEntry,
                 DefaultMenuEntry(
                     title = stringResource(id = R.string.game_over_exit),
-                    action = gameInteractions.onExit,
-                    color = MaterialTheme.colorScheme.onError,
-                    iconResId = R.drawable.ic_exit
+                    action = gameInteractions.onExit
                 )
             ),
+            isVisible = isVisible,
+            padTitle = true,
             menuHint = {
                 if (score != null) {
                     val best = stringResource(id = R.string.game_over_best)

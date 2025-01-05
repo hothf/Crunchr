@@ -32,6 +32,8 @@ class GameViewModel : ViewModel() {
 
     var dependencies: GameDependencies = GameDependencies()
 
+    private var ready: Ready? = null
+
     private val game: CrunchrGame = CrunchrGame(viewModelScope)
 
     init {
@@ -159,12 +161,13 @@ class GameViewModel : ViewModel() {
             }
 
             GameScreenStatus.PAUSED -> {
-                resume()
+                startReady(resume = true, skipReady = false)
                 true
             }
 
             GameScreenStatus.NOT_LOADED,
             GameScreenStatus.NOT_STARTED,
+            GameScreenStatus.GET_READY,
             GameScreenStatus.ENDED -> false
         }
     }
@@ -185,15 +188,6 @@ class GameViewModel : ViewModel() {
         }
     }
 
-    fun start(level: Level?) {
-        viewModelScope.launch {
-            if (level != null) {
-                dependencies.settingsSaver().setChosenLevel(level)
-            }
-            game.startNew(dependencies.settingsSaver().getChosenLevel())
-        }
-    }
-
     fun release() {
         game.release()
 
@@ -208,8 +202,30 @@ class GameViewModel : ViewModel() {
         game.forfeit()
     }
 
-    fun resume() {
-        game.resume()
+    fun startReady(resume: Boolean, skipReady: Boolean, level: Level? = null) {
+        ready = Ready(resume = resume, level = level)
+
+        if (skipReady) {
+            game.solve(null)
+        } else {
+            updateGameScreenStatusTo(GameScreenStatus.GET_READY)
+        }
+    }
+
+    fun onReady() {
+        val isReady = ready ?: return
+        if (isReady.resume) {
+            game.resume()
+        } else {
+            viewModelScope.launch {
+                _event.emit(Event.ResetEvent)
+
+                if (isReady.level != null) {
+                    dependencies.settingsSaver().setChosenLevel(isReady.level)
+                }
+                game.startNew(dependencies.settingsSaver().getChosenLevel())
+            }
+        }
     }
 
     fun solve() {
@@ -268,6 +284,7 @@ class GameViewModel : ViewModel() {
     enum class GameScreenStatus {
         NOT_LOADED,
         NOT_STARTED,
+        GET_READY,
         RUNNING,
         PAUSED,
         ENDED,
@@ -297,6 +314,10 @@ class GameViewModel : ViewModel() {
         data class GameTimeEvent(val stopped: Boolean, val timeMs: Long, val overallMs: Long) :
             TimeEvent(timeMs, overallMs)
 
+        data object ResetEvent : Event()
+
         data class SolvingResultEvent(val result: SolvingResult) : Event()
     }
+
+    private data class Ready(val resume: Boolean, val level: Level? = null)
 }

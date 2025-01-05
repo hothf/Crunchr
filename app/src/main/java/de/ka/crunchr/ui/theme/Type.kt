@@ -17,39 +17,46 @@ val inconsolata = FontFamily(
 
 // Set of Material typography styles to start with
 val Typography = Typography(
-    bodyLarge = TextStyle(
+    bodySmall = TextStyle(
         fontFamily = inconsolata,
         fontWeight = FontWeight.Normal,
         fontSize = 18.sp,
         lineHeight = 18.sp,
-        letterSpacing = 0.5.sp
+        letterSpacing = 0.sp
     ),
     bodyMedium = TextStyle(
         fontFamily = inconsolata,
         fontWeight = FontWeight.Bold,
-        fontSize = 16.sp,
-        lineHeight = 16.sp,
+        fontSize = 18.sp,
+        lineHeight = 18.sp,
         letterSpacing = 0.sp
+    ),
+    bodyLarge = TextStyle(
+        fontFamily = inconsolata,
+        fontWeight = FontWeight.Normal,
+        fontSize = 20.sp,
+        lineHeight = 20.sp,
+        letterSpacing = 0.5.sp
     ),
     titleSmall = TextStyle(
         fontFamily = inconsolata,
-        fontWeight = FontWeight.Bold,
-        fontSize = 14.sp,
-        lineHeight = 14.sp,
+        fontWeight = FontWeight.Normal,
+        fontSize = 18.sp,
+        lineHeight = 18.sp,
         letterSpacing = 0.sp
     ),
     titleMedium = TextStyle(
         fontFamily = inconsolata,
         fontWeight = FontWeight.Bold,
-        fontSize = 18.sp,
-        lineHeight = 18.sp,
+        fontSize = 20.sp,
+        lineHeight = 20.sp,
         letterSpacing = 0.sp
     ),
     titleLarge = TextStyle(
         fontFamily = inconsolata,
         fontWeight = FontWeight.Bold,
-        fontSize = 28.sp,
-        lineHeight = 28.sp,
+        fontSize = 32.sp,
+        lineHeight = 32.sp,
         letterSpacing = 0.sp
     ),
     labelSmall = TextStyle(

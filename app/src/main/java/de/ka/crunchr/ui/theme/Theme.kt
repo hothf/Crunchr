@@ -22,7 +22,7 @@ private val DarkColorScheme = darkColorScheme(
 
 private val LightColorScheme = lightColorScheme(
     primary = light,
-    secondary = dark,
+    secondary = accent,
     tertiary = glow,
     onBackground = solveColor,
     onTertiary = lightText,
@@ -34,7 +34,8 @@ private val LightColorScheme = lightColorScheme(
     inversePrimary = darkText,
     outline = successGreen,
     error = errorRed,
-    onTertiaryContainer = black
+    onTertiaryContainer = black,
+    surfaceVariant = dark
 
     /* Other default colors to override
     background = Color(0xFFFFFBFE),
@@ -68,9 +69,13 @@ fun CrunchrTheme(
     if (!view.isInEditMode) {
         SideEffect {
             val window = (view.context as Activity).window
-            window.statusBarColor =
-                if (configuration.orientation == Configuration.ORIENTATION_LANDSCAPE) colorScheme.onTertiaryContainer.toArgb() else colorScheme.secondary.toArgb()
-            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = darkTheme
+            val color =
+                if (configuration.orientation == Configuration.ORIENTATION_LANDSCAPE) colorScheme.onTertiaryContainer.toArgb() else colorScheme.primary.toArgb()
+            window.navigationBarColor = color
+            window.statusBarColor = color
+
+            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = true
+            WindowCompat.getInsetsController(window, view).isAppearanceLightNavigationBars = true
         }
     }
 

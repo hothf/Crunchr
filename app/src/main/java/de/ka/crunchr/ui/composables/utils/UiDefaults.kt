@@ -10,14 +10,18 @@ object UiDefaults {
     val sideMargin = 12.dp
     val topMargin = 14.dp
     val smallPadding = 4.dp
+    val mediumPadding = 10.dp
     val tinyPadding = 1.dp
     val verySmallPadding = 2.dp
     val defaultPaddings = 8.dp
     val bigPaddings = 16.dp
+    val veryBigPaddings = 22.dp
+    val hugePaddings = 24.dp
     val blurRadius = 12.dp
     val defaultSpacer = 6.dp
     val mediumMargin = 6.dp
     val smallCorners = 6.dp
+    val mediumCorners = 8.dp
     val smallIconSize = 21.dp
     val defaultCorners = 12.dp
     val buttonSize = 52.dp
@@ -26,7 +30,7 @@ object UiDefaults {
     val timerBigSize = 18.dp
     val timerSmallSize = 28.dp
     val smallButtonSize = 42.dp
-    val defaultCheckBoxSize = 48.dp
+    val defaultCheckBoxSize = 42.dp
 
     val defaultCheckImageRes = R.drawable.ic_check
     val circleCrossImageRes = R.drawable.ic_clear_round

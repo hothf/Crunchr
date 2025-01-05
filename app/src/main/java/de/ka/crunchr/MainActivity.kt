@@ -86,17 +86,6 @@ class MainActivity : ComponentActivity() {
                 }
                 true
             }
-            splashScreen.setOnExitAnimationListener { splashScreenView ->
-                ObjectAnimator.ofFloat(splashScreenView, View.ALPHA, 1f, 0f).apply {
-                    interpolator = DecelerateInterpolator()
-                    duration = 500
-                    doOnEnd {
-                        splashScreenView.remove()
-                    }
-                }.run {
-                    start()
-                }
-            }
         } else {
             viewModel.loadLastGameAndSettings()
         }
@@ -106,7 +95,7 @@ class MainActivity : ComponentActivity() {
 
 @Preview(showBackground = true)
 @Composable
-fun GreetingPreview() {
+fun MainPreview() {
     CrunchrTheme {
         GameScreen()
     }

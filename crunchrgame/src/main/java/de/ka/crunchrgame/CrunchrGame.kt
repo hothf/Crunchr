@@ -152,8 +152,8 @@ class CrunchrGame(private var coroutineScope: CoroutineScope?) {
 
         state.currentCrunch?.let {
             val result = Rules.determineCrunchResult(
+                crunch = it,
                 input = input,
-                expected = it.expected,
                 neededTimeMs = state.currentCrunchElapsedTimeMs,
                 lastSolvingTimeMs = state.lastCrunchSolvedTimeMs,
                 streakCount = state.streakCount,
@@ -245,7 +245,7 @@ class CrunchrGame(private var coroutineScope: CoroutineScope?) {
     private fun failCrunch(startNew: Boolean = false) {
         val crunch = state.currentCrunch
         crunch?.let {
-            val result = Rules.determineCrunchResult(expected = crunch.expected)
+            val result = Rules.determineCrunchResult(crunch = crunch)
             state = state.copy(
                 lastCrunchSolvedTimeMs = null,
                 overallCrunchCount = state.overallCrunchCount + 1,

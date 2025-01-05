@@ -14,7 +14,7 @@ import de.ka.crunchr.ui.composables.SpacerMenuEntry
 import de.ka.crunchr.ui.game.GameInteractions
 import de.ka.crunchr.ui.game.SettingsInteractions
 import de.ka.crunchr.ui.game.getLevelSymbols
-import de.ka.crunchr.ui.game.msToTime
+
 import de.ka.crunchr.ui.theme.CrunchrTheme
 import de.ka.crunchrgame.models.Score
 
@@ -27,18 +27,17 @@ fun PauseScreen(
 ) {
     AnimatedContainer(isVisible = isVisible) {
         Menu(
+            isVisible = isVisible,
             menuTitle = stringResource(id = R.string.paused_title), menuEntries = listOf(
                 DefaultMenuEntry(
                     title = stringResource(id = R.string.paused_resume),
-                    action = gameInteractions.onResume,
-                    color = MaterialTheme.colorScheme.onBackground,
-                    iconResId = R.drawable.ic_play
+                    action = { gameInteractions.onResume(false) },
+                    color = MaterialTheme.colorScheme.onBackground
                 ),
                 SpacerMenuEntry,
                 DefaultMenuEntry(
                     title = stringResource(id = R.string.paused_settings),
-                    action = { settingsInteractions.onOpenSettings(true) },
-                    iconResId = R.drawable.ic_settings
+                    action = { settingsInteractions.onOpenSettings(true) }
                 ),
                 SpacerMenuEntry,
                 DefaultMenuEntry(
@@ -49,14 +48,8 @@ fun PauseScreen(
                     title = stringResource(id = R.string.paused_forfeit),
                     action = gameInteractions.onForfeit
                 ),
-                SpacerMenuEntry,
-                DefaultMenuEntry(
-                    title = stringResource(id = R.string.paused_exit),
-                    action = gameInteractions.onExit,
-                    color = MaterialTheme.colorScheme.onError,
-                    iconResId = R.drawable.ic_exit
-                )
             ),
+            padTitle = true,
             menuHint = {
                 if (score != null) {
                     MenuRows(

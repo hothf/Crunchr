@@ -9,7 +9,6 @@ import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
@@ -25,7 +24,7 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.DrawScope
-import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.Fill
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -42,6 +41,10 @@ data class TimeProgress(
 class TimerHostState {
     var current by mutableStateOf(TimeProgress())
         private set
+
+    fun reset() {
+        current = TimeProgress()
+    }
 
     suspend fun handle(stop: Boolean, timeLeftMs: Int, progress: Float) {
         if (stop) {
@@ -140,8 +143,8 @@ private fun DrawScope.drawRoundIndicator(
         color = color,
         startAngle = -90f,
         sweepAngle = -endFraction * 360f,
-        false,
-        style = Stroke(width = strokeWidth.toPx())
+        true,
+        style = Fill
     )
 }
 
@@ -149,13 +152,12 @@ private fun DrawScope.drawLinearIndicator(
     endFraction: Float,
     color: Color
 ) {
-    val width = size.width
     val yOffset = size.height / 2
 
     drawLine(
         color,
         Offset(0f, yOffset),
-        Offset(width * endFraction, yOffset),
+        Offset(size.width * endFraction, yOffset ),
         size.height
     )
 }
@@ -177,7 +179,7 @@ fun PreviewTimerProgress() {
         Column {
             TimerProgressHost(
                 modifier = Modifier
-                    .fillMaxWidth()
+                    .width(70.dp)
                     .height(25.dp),
                 color = Color.Blue,
                 animateCloseCall = true,
@@ -185,7 +187,7 @@ fun PreviewTimerProgress() {
             )
             TimerProgressHost(
                 modifier = Modifier
-                    .fillMaxWidth()
+                    .width(70.dp)
                     .height(25.dp)
                     .padding(top = 20.dp),
                 animateCloseCall = true,

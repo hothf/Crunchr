@@ -31,7 +31,9 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import de.ka.crunchr.ui.composables.utils.Corners
 import de.ka.crunchr.ui.composables.utils.UiDefaults
 import de.ka.crunchr.ui.composables.utils.shadowTap
 
@@ -43,16 +45,19 @@ fun ActionCheckBox(
     checked: Boolean = false,
     onTap: (Boolean) -> Unit = {},
     color: Color = MaterialTheme.colorScheme.primary,
-    foregroundColor: Color? = MaterialTheme.colorScheme.tertiary,
+    foregroundColor: Color? = MaterialTheme.colorScheme.secondary.copy(alpha = 0.75f),
     tintColor: Color = MaterialTheme.colorScheme.inversePrimary,
+    cornerRadius: Dp = UiDefaults.smallIconSize,
     @DrawableRes iconResId: Int = UiDefaults.defaultCheckImageRes
 ) {
     Row(
         modifier = modifier.shadowTap(
+            cornersRadius = cornerRadius,
             onTap = { onTap(!checked) },
             awaitOnTap = awaitOnTap,
             backgroundColor = color,
             foregroundColor = foregroundColor,
+            corners = Corners.All(),
             borderColor = MaterialTheme.colorScheme.onSurface
         ),
         verticalAlignment = Alignment.CenterVertically
@@ -73,7 +78,7 @@ fun ActionCheckBox(
                 .padding(UiDefaults.defaultPaddings)
                 .size(UiDefaults.defaultCheckBoxSize)
                 .border(
-                    BorderStroke(0.5.dp, color = MaterialTheme.colorScheme.onSurface),
+                    BorderStroke(0.5.dp, color = tintColor),
                     RoundedCornerShape(8.dp)
                 )
                 .scale(scaleAnim)
@@ -83,8 +88,7 @@ fun ActionCheckBox(
             tint = tintColor
         )
         Text(
-            modifier = Modifier
-                .padding(UiDefaults.defaultPaddings),
+            modifier = Modifier.padding(UiDefaults.defaultPaddings),
             text = text,
             style = MaterialTheme.typography.titleMedium,
             color = tintColor,
@@ -104,7 +108,7 @@ fun PreviewActionCheckBox() {
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             ActionCheckBox(
-                modifier = Modifier.height(100.dp),
+                modifier = Modifier,
                 checked = false,
                 text = "SOLVE and ACTIVE SOLVE and ACTIVE SOLVE and ACTIVE SOLVE and ACTIVE"
             )

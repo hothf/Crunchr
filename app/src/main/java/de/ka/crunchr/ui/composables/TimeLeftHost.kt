@@ -18,7 +18,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun TimeLeftHost(
     timerHostState: TimerHostState,
-    content: @Composable (time: Int) -> Unit
+    content: @Composable (time: Int) -> Unit = {}
 ) {
 
     val scope = rememberCoroutineScope()
@@ -66,7 +66,7 @@ private fun PreviewTimerScore() {
             }
         }
 
-        TimeLeftHost(timerHostState) { time ->
+        TimeLeftHost(timerHostState = timerHostState) { time ->
             Text("Time: $time s")
         }
     }

@@ -17,7 +17,7 @@ import de.ka.crunchr.domain.StubStringResolver
 import de.ka.crunchr.domain.StubVibrator
 import de.ka.crunchr.domain.Vibrator
 import de.ka.crunchr.ui.composables.ColorUpdateHostState
-import de.ka.crunchr.ui.composables.ExpectedUpdateHostState
+import de.ka.crunchr.ui.composables.ResultHistoryHostState
 import de.ka.crunchr.ui.composables.SolvingResult
 import de.ka.crunchr.ui.composables.SolvingResultUpdateHostState
 import de.ka.crunchr.ui.composables.TimerHostState
@@ -27,7 +27,7 @@ import de.ka.crunchrgame.models.Level
 
 data class GameInteractions(
     val onStart: (level: Level?) -> Unit = {},
-    val onResume: () -> Unit = {},
+    val onResume: (skipReady: Boolean) -> Unit = {},
     val onPause: () -> Unit = {},
     val onForfeit: () -> Unit = {},
     val onSolve: () -> Unit = {},
@@ -36,6 +36,7 @@ data class GameInteractions(
     val onExit: () -> Unit = {},
     val clear: () -> Unit = {},
     val onBack: () -> Unit = {},
+    val onReady: () -> Unit = {}
 )
 
 data class SettingsInteractions(
@@ -57,7 +58,7 @@ data class GameHostStates(
     val gameTimerHostState: TimerHostState = TimerHostState(),
     val crunchTimerHostState: TimerHostState = TimerHostState(),
     val scoreUpdateHostState: SolvingResultUpdateHostState = SolvingResultUpdateHostState(),
-    val expectedUpdateHostState: ExpectedUpdateHostState = ExpectedUpdateHostState(),
+    val resultHistoryHostState: ResultHistoryHostState = ResultHistoryHostState(),
     val colorUpdateHostState: ColorUpdateHostState = ColorUpdateHostState()
 )
 
@@ -67,7 +68,7 @@ fun defaultGameHostStates(): GameHostStates {
         gameTimerHostState = remember { TimerHostState() },
         crunchTimerHostState = remember { TimerHostState() },
         scoreUpdateHostState = remember { SolvingResultUpdateHostState() },
-        expectedUpdateHostState = remember { ExpectedUpdateHostState() },
+        resultHistoryHostState = remember { ResultHistoryHostState() },
         colorUpdateHostState = remember { ColorUpdateHostState() }
     )
 }
@@ -89,7 +90,7 @@ fun Result.toSolvingResult(stringResolver: StringResolver): SolvingResult {
             if (successful) R.string.performance_points_pos else R.string.performance_points_neg,
             this.finalPoints
         ),
-        expected = this.expected,
+        crunch = this.crunch,
         was = this.actual,
         multiplier = multiplierDisplay
     )

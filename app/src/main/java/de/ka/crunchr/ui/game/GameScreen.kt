@@ -30,8 +30,8 @@ import de.ka.crunchr.ui.composables.lifecycle.collectInLaunchedEffectWithLifecyc
 import de.ka.crunchr.ui.composables.utils.UiDefaults
 import de.ka.crunchr.ui.game.gamebelowinput.LowerInput
 import de.ka.crunchr.ui.game.gameatopdisplay.TopDisplay
+import de.ka.crunchr.ui.game.subscreens.GetReadyScreen
 import de.ka.crunchr.ui.game.subscreens.LevelSelectScreen
-import de.ka.crunchr.ui.game.subscreens.LoadingScreen
 import de.ka.crunchr.ui.theme.CrunchrTheme
 import de.ka.crunchrgame.models.crunch.Crunch
 import de.ka.crunchrgame.models.crunch.Symbols
@@ -57,11 +57,18 @@ fun GameScreen(
     }
 
     val gameInteractions = GameInteractions(
-        onStart = { level -> viewModel.start(level) },
+        onStart = { level ->
+            viewModel.startReady(
+                resume = false,
+                skipReady = false,
+                level = level
+            )
+        },
         onPause = { viewModel.pause() },
-        onResume = { viewModel.resume() },
+        onResume = { skipReady -> viewModel.startReady(resume = true, skipReady = skipReady) },
         onForfeit = { viewModel.forfeit() },
         onSolve = { viewModel.solve() },
+        onReady = { viewModel.onReady() },
         input = { input -> viewModel.updateInput(input) },
         clear = { viewModel.clear() },
         onQuit = { viewModel.quit() },
@@ -85,6 +92,14 @@ fun GameScreen(
                 )
             }
 
+            is GameViewModel.Event.ResetEvent -> {
+                gameHostStates.colorUpdateHostState.reset()
+                gameHostStates.gameTimerHostState.reset()
+                gameHostStates.scoreUpdateHostState.reset()
+                gameHostStates.crunchTimerHostState.reset()
+                gameHostStates.resultHistoryHostState.reset()
+            }
+
             is GameViewModel.Event.CrunchTimeEvent -> {
                 gameHostStates.crunchTimerHostState.handle(
                     stop = it.stopped,
@@ -95,11 +110,10 @@ fun GameScreen(
 
             is GameViewModel.Event.SolvingResultEvent -> {
                 launch { gameHostStates.scoreUpdateHostState.show(it.result) }
+                launch { gameHostStates.resultHistoryHostState.show(it.result) }
                 if (it.result.successful) {
-                    launch { gameHostStates.expectedUpdateHostState.hide() }
                     launch { gameHostStates.colorUpdateHostState.success() }
                 } else {
-                    launch { gameHostStates.expectedUpdateHostState.show(it.result) }
                     launch { gameHostStates.colorUpdateHostState.fail() }
                 }
             }
@@ -126,49 +140,51 @@ fun GameScreenContent(
     gameHostStates: GameHostStates = GameHostStates(),
 ) {
     Box(
-        modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.secondary),
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.primary),
         contentAlignment = Alignment.Center
     ) {
-        if (uiState.status.current != GameViewModel.GameScreenStatus.NOT_LOADED) {
-            val configuration = LocalConfiguration.current
-            if (configuration.orientation == Configuration.ORIENTATION_LANDSCAPE) {
-                Row(modifier = Modifier.fillMaxWidth()) {
-                    LowerInput(
-                        modifier = Modifier
-                            .fillMaxHeight()
-                            .weight(UiDefaults.END_PERCENTAGE)
-                            .clip(RoundedCornerShape(UiDefaults.defaultCorners)),
-                        gameInteractions = gameInteractions,
-                        isHorizontal = true
-                    )
-                    TopDisplay(
-                        modifier = Modifier
-                            .fillMaxHeight()
-                            .weight(UiDefaults.START_PERCENTAGE),
-                        uiState = uiState,
-                        gameHostStates = gameHostStates
-                    )
-                }
-            } else {
-                Column(modifier = Modifier.fillMaxHeight()) {
-                    TopDisplay(
-                        modifier = Modifier
-                            .fillMaxHeight()
-                            .weight(UiDefaults.TOP_PERCENTAGE),
-                        uiState = uiState,
-                        gameHostStates = gameHostStates
-                    )
-                    LowerInput(
-                        modifier = Modifier
-                            .fillMaxHeight()
-                            .weight(UiDefaults.BOTTOM_PERCENTAGE)
-                            .clip(RoundedCornerShape(UiDefaults.defaultCorners)),
-                        gameInteractions = gameInteractions
-                    )
-                }
+        val configuration = LocalConfiguration.current
+        if (configuration.orientation == Configuration.ORIENTATION_LANDSCAPE) {
+            Row(modifier = Modifier.fillMaxWidth()) {
+                LowerInput(
+                    buttonsEnabled = uiState.status.current == GameViewModel.GameScreenStatus.RUNNING,
+                    modifier = Modifier
+                        .fillMaxHeight()
+                        .weight(UiDefaults.END_PERCENTAGE)
+                        .clip(RoundedCornerShape(UiDefaults.defaultCorners)),
+                    gameInteractions = gameInteractions,
+                    isHorizontal = true
+                )
+                TopDisplay(
+                    modifier = Modifier
+                        .fillMaxHeight()
+                        .weight(UiDefaults.START_PERCENTAGE),
+                    uiState = uiState,
+                    gameHostStates = gameHostStates,
+                    isHorizontal = true
+                )
+            }
+        } else {
+            Column(modifier = Modifier.fillMaxSize()) {
+                TopDisplay(
+                    modifier = Modifier
+                        .fillMaxHeight()
+                        .weight(UiDefaults.TOP_PERCENTAGE),
+                    uiState = uiState,
+                    gameHostStates = gameHostStates
+                )
+                LowerInput(
+                    buttonsEnabled = uiState.status.current == GameViewModel.GameScreenStatus.RUNNING,
+                    modifier = Modifier
+                        .fillMaxHeight()
+                        .weight(UiDefaults.BOTTOM_PERCENTAGE),
+                    gameInteractions = gameInteractions
+                )
             }
         }
-        LoadingScreen(isVisible = uiState.status.current != GameViewModel.GameScreenStatus.RUNNING)
+
         PauseScreen(
             isVisible = uiState.status.current == GameViewModel.GameScreenStatus.PAUSED,
             score = uiState.currentScore,
@@ -195,6 +211,10 @@ fun GameScreenContent(
             isVisible = uiState.status.current == GameViewModel.GameScreenStatus.CHOOSE_LEVEL,
             gameInteractions = gameInteractions
         )
+        GetReadyScreen(
+            isVisible = uiState.status.current == GameViewModel.GameScreenStatus.GET_READY,
+            gameInteractions = gameInteractions
+        )
     }
 }
 
@@ -204,7 +224,7 @@ fun PreviewGameScreenPortrait() {
     CrunchrTheme {
         GameScreenContent(
             uiState = GameViewModel.UiState(
-                status = GameViewModel.ScreenStates(current = GameViewModel.GameScreenStatus.RUNNING),
+                status = GameViewModel.ScreenStates(current = GameViewModel.GameScreenStatus.PAUSED),
                 crunch = Crunch(2000, 1, 2, Symbols.ADD),
                 input = "123"
             )
