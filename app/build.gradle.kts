@@ -1,20 +1,74 @@
+import org.jetbrains.compose.desktop.application.dsl.TargetFormat
+
 plugins {
+    alias(libs.plugins.kotlinMultiplatform)
+    alias(libs.plugins.composeMultiplatform)
+    alias(libs.plugins.composeCompiler)
     alias(libs.plugins.androidApplication)
-    alias(libs.plugins.jetbrainsKotlinAndroid)
+}
+
+kotlin {
+    @Suppress("DEPRECATION")
+    androidTarget {
+        compilerOptions {
+            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_11)
+        }
+    }
+
+    jvm("desktop") {
+        compilerOptions {
+            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_11)
+        }
+    }
+
+    sourceSets {
+        commonMain.dependencies {
+            @Suppress("DEPRECATION")
+            implementation(compose.runtime)
+            @Suppress("DEPRECATION")
+            implementation(compose.foundation)
+            @Suppress("DEPRECATION")
+            implementation(compose.material3)
+            @Suppress("DEPRECATION")
+            implementation(compose.ui)
+            @Suppress("DEPRECATION")
+            implementation(compose.animation)
+            @Suppress("DEPRECATION")
+            implementation(compose.components.resources)
+            @Suppress("DEPRECATION")
+            implementation(compose.components.uiToolingPreview)
+            implementation(project(":crunchrgame"))
+            implementation(libs.coroutines.core)
+            implementation(libs.androidx.lifecycle.viewmodel.compose)
+            implementation(libs.androidx.lifecycle.runtime.compose)
+        }
+        androidMain.dependencies {
+            implementation(libs.androidx.activity.compose)
+            implementation(libs.androidx.datastore)
+            implementation(libs.androidx.splashscreen)
+            implementation(libs.androidx.core.ktx)
+            @Suppress("DEPRECATION")
+            implementation(compose.uiTooling)
+        }
+        val desktopMain by getting {
+            dependencies {
+                implementation(compose.desktop.currentOs)
+            }
+        }
+    }
 }
 
 android {
     namespace = "de.ka.crunchr"
-    compileSdk = 34
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "de.ka.crunchr"
         minSdk = 24
-        targetSdk = 34
+        targetSdk = 36
         versionCode = 1
         versionName = "1.0"
 
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
             useSupportLibrary = true
         }
@@ -30,18 +84,13 @@ android {
         }
     }
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_1_8
-        targetCompatibility = JavaVersion.VERSION_1_8
-    }
-    kotlinOptions {
-        jvmTarget = "1.8"
+        sourceCompatibility = JavaVersion.VERSION_11
+        targetCompatibility = JavaVersion.VERSION_11
     }
     buildFeatures {
         compose = true
     }
-    composeOptions {
-        kotlinCompilerExtensionVersion = "1.5.1"
-    }
+
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
@@ -49,24 +98,20 @@ android {
     }
 }
 
-dependencies {
+compose.desktop {
+    application {
+        mainClass = "de.ka.crunchr.MainKt"
 
-    implementation(libs.androidx.core.ktx)
-    implementation(libs.androidx.lifecycle.runtime.ktx)
-    implementation(libs.androidx.activity.compose)
-    implementation(platform(libs.androidx.compose.bom))
-    implementation(libs.androidx.ui)
-    implementation(libs.androidx.ui.graphics)
-    implementation(libs.androidx.ui.tooling.preview)
-    implementation(libs.androidx.material3)
-    implementation(libs.androidx.datastore)
-    implementation(libs.androidx.splashscreen)
-    implementation(project(":crunchrgame"))
-    testImplementation(libs.junit)
-    androidTestImplementation(libs.androidx.junit)
-    androidTestImplementation(libs.androidx.espresso.core)
-    androidTestImplementation(platform(libs.androidx.compose.bom))
-    androidTestImplementation(libs.androidx.ui.test.junit4)
-    debugImplementation(libs.androidx.ui.tooling)
-    debugImplementation(libs.androidx.ui.test.manifest)
+        nativeDistributions {
+            targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
+            packageName = "de.ka.crunchr"
+            packageVersion = "1.0.0"
+        }
+    }
+}
+
+compose.resources {
+    publicResClass = true
+    packageOfResClass = "de.ka.crunchr.generated"
+    generateResClass = always
 }
