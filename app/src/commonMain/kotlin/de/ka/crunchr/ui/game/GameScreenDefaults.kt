@@ -6,6 +6,7 @@ import de.ka.crunchr.domain.AppGameSaver
 import de.ka.crunchr.domain.AppSettingsSaver
 import de.ka.crunchr.domain.HighScoreSaver
 import de.ka.crunchr.domain.Sound
+import de.ka.crunchr.domain.StringKey
 import de.ka.crunchr.domain.StringResolver
 import de.ka.crunchr.domain.StubAppGameSaver
 import de.ka.crunchr.domain.StubAppSettingsSaver
@@ -84,19 +85,19 @@ fun defaultGameHostStates(): GameHostStates {
 
 fun Result.toSolvingResult(stringResolver: StringResolver): SolvingResult {
     val streak = if (this.streakCount > 0) stringResolver.string(
-        0, // placeholder resId — not used in CMP path
+        StringKey.PERFORMANCE_STREAK,
         this.streakCount + 1
     ) else ""
     val multiplierDisplay =
         if (this.multiplier > 1f) stringResolver.string(
-            0,
+            StringKey.PERFORMANCE_MULTIPLIER,
             this.multiplier.getDisplayableFloat() ?: ""
         ) else ""
     return SolvingResult(
         successful = successful,
         performance = if (streakCount > 0) streak else multiplierDisplay,
         score = stringResolver.string(
-            0,
+            if (successful) StringKey.PERFORMANCE_POINTS_POS else StringKey.PERFORMANCE_POINTS_NEG,
             this.finalPoints
         ),
         crunch = this.crunch,
